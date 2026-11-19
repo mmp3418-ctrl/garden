@@ -1,17 +1,18 @@
-import { ImagePlus, Trash2 } from 'lucide-react'
-import { useEffect, useState, type ChangeEvent, type FC, type FormEvent } from 'react'
-import { seedSettings } from '../../data/seedContent'
+import { ImagePlus, Trash2, UploadCloud } from 'lucide-react'
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FC, type FormEvent } from 'react'
+import { defaultSettings } from '../../data/defaults'
 import { deleteMediaByPublicUrl, uploadMediaFile } from '../../lib/storage'
 import { supabase } from '../../lib/supabase'
 import type { SiteSettings } from '../../types'
 import { mergeSettings } from '../../utils/siteSettings'
-import type { AdminDictionary } from '../i18n'
 import { AdminInput, AdminTextarea } from '../components/AdminField'
 import type { ToastState } from '../components/AdminToast'
+import type { AdminDictionary } from '../i18n'
 
-interface SiteSettingsTabProps {
+interface Props {
   dict: AdminDictionary
   onToast: (toast: ToastState) => void
+  onSaved?: () => void
 }
 
 type FormState = {
@@ -48,17 +49,17 @@ function toForm(settings: SiteSettings): FormState {
   }
 }
 
-const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
+const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
   const [rowId, setRowId] = useState<string | number>(1)
-  const [form, setForm] = useState<FormState>(toForm(seedSettings))
+  const [form, setForm] = useState<FormState>(toForm(defaultSettings))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const load = async (): Promise<void> => {
     setLoading(true)
-
-    // Prefer the canonical row id = 1, then fall back to the first available row.
     let row: SiteSettings | null = null
     const byId = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
     if (!byId.error && byId.data) {
@@ -70,11 +71,8 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
         .order('id', { ascending: true })
         .limit(1)
         .maybeSingle()
-      if (fallback.error) {
-        onToast({ type: 'error', message: fallback.error.message || dict.error })
-      } else if (fallback.data) {
-        row = fallback.data as SiteSettings
-      }
+      if (fallback.error) onToast({ type: 'error', message: fallback.error.message || dict.error })
+      else if (fallback.data) row = fallback.data as SiteSettings
     }
 
     if (row) {
@@ -82,7 +80,7 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
       setForm(toForm(merged))
       setRowId(merged.id)
     } else {
-      setForm(toForm(seedSettings))
+      setForm(toForm(defaultSettings))
       setRowId(1)
     }
     setLoading(false)
@@ -97,42 +95,49 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleUpload = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
+  const persistHeroUrl = async (url: string | null): Promise<void> => {
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ hero_image_url: url, updated_at: new Date().toISOString() })
+      .eq('id', rowId)
+    if (error) throw new Error(error.message)
+  }
 
+  const uploadHero = async (file: File): Promise<void> => {
+    if (!file.type.startsWith('image/')) return
     setUploading(true)
     try {
       const previous = form.hero_image_url
       const { publicUrl } = await uploadMediaFile('hero', file)
       setForm((prev) => ({ ...prev, hero_image_url: publicUrl }))
-
-      const payload = {
-        hero_image_url: publicUrl,
-        updated_at: new Date().toISOString(),
-      }
-
-      const { error } = await supabase.from('site_settings').update(payload).eq('id', rowId)
-      if (error) throw new Error(error.message)
-
+      await persistHeroUrl(publicUrl)
       if (previous && previous !== publicUrl) {
         try {
           await deleteMediaByPublicUrl(previous)
         } catch {
-          /* non-blocking cleanup */
+          /* best-effort */
         }
       }
-
       onToast({ type: 'success', message: dict.saved })
+      onSaved?.()
     } catch (err) {
-      onToast({
-        type: 'error',
-        message: err instanceof Error ? err.message : dict.error,
-      })
+      onToast({ type: 'error', message: err instanceof Error ? err.message : dict.error })
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleUpload = (event: ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (file) void uploadHero(file)
+  }
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
+    event.preventDefault()
+    setDragging(false)
+    const file = event.dataTransfer.files?.[0]
+    if (file) void uploadHero(file)
   }
 
   const handleRemoveHero = async (): Promise<void> => {
@@ -140,23 +145,17 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
     setUploading(true)
     try {
       const previous = form.hero_image_url
-      const { error } = await supabase
-        .from('site_settings')
-        .update({ hero_image_url: null, updated_at: new Date().toISOString() })
-        .eq('id', rowId)
-      if (error) throw new Error(error.message)
+      await persistHeroUrl(null)
       setForm((prev) => ({ ...prev, hero_image_url: '' }))
       try {
         await deleteMediaByPublicUrl(previous)
       } catch {
-        /* ignore */
+        /* best-effort */
       }
       onToast({ type: 'success', message: dict.saved })
+      onSaved?.()
     } catch (err) {
-      onToast({
-        type: 'error',
-        message: err instanceof Error ? err.message : dict.error,
-      })
+      onToast({ type: 'error', message: err instanceof Error ? err.message : dict.error })
     } finally {
       setUploading(false)
     }
@@ -179,7 +178,6 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
         facilities_heading_en: form.facilities_heading_en.trim() || null,
         facilities_intro_ar: form.facilities_intro_ar.trim() || null,
         facilities_intro_en: form.facilities_intro_en.trim() || null,
-        // Keep legacy columns in sync for older schemas / readers
         about_ar: form.complex_overview_ar.trim() || null,
         about_en: form.complex_overview_en.trim() || null,
         vision_ar: form.facilities_heading_ar.trim() || null,
@@ -190,72 +188,70 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
         updated_at: new Date().toISOString(),
       }
 
-      let error = (await supabase.from('site_settings').update(payload).eq('id', rowId)).error
-
+      let { error } = await supabase.from('site_settings').update(payload).eq('id', rowId)
       if (error) {
-        // Create the row if the table is empty
-        const insertAttempt = await supabase
+        const upsert = await supabase
           .from('site_settings')
           .upsert({ id: rowId === 1 || rowId === '1' ? 1 : rowId, ...payload })
-        error = insertAttempt.error
-        if (!error && insertAttempt.data) {
-          /* ok */
-        }
+        error = upsert.error
       }
-
       if (error) throw new Error(error.message)
       onToast({ type: 'success', message: dict.saved })
+      onSaved?.()
       await load()
     } catch (err) {
-      onToast({
-        type: 'error',
-        message: err instanceof Error ? err.message : dict.error,
-      })
+      onToast({ type: 'error', message: err instanceof Error ? err.message : dict.error })
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) {
-    return <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
-  }
+  if (loading) return <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
 
   return (
     <form onSubmit={(e) => void handleSave(e)} className="space-y-6">
       <section className="glass rounded-2xl p-5 sm:p-6">
-        <h3 className="mb-4 text-base font-bold text-[var(--text-primary)]">{dict.heroImage}</h3>
+        <h3 className="mb-4 text-base font-bold">{dict.heroImage}</h3>
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
           <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-deep)]">
             {form.hero_image_url ? (
-              <img
-                src={form.hero_image_url}
-                alt={dict.heroPreview}
-                className="aspect-[16/9] h-full w-full object-cover"
-              />
+              <img src={form.hero_image_url} alt={dict.heroPreview} className="aspect-[16/9] h-full w-full object-cover" />
             ) : (
               <div className="flex aspect-[16/9] items-center justify-center text-sm text-[var(--text-muted)]">
                 {dict.heroPreview}
               </div>
             )}
           </div>
-          <div className="flex flex-col justify-center gap-3">
-            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-gradient px-4 text-sm font-bold text-white">
+
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition ${
+              dragging ? 'border-cyan bg-cyan/10' : 'border-[var(--glass-border)]'
+            }`}
+          >
+            <UploadCloud className="text-cyan" size={26} />
+            <p className="text-xs text-[var(--text-secondary)]">{dict.dropHint}</p>
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-gradient px-4 text-sm font-bold text-white disabled:opacity-70"
+            >
               <ImagePlus size={16} />
               {uploading ? dict.uploading : dict.upload}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={uploading}
-                onChange={(e) => void handleUpload(e)}
-              />
-            </label>
+            </button>
+            <input ref={inputRef} type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleUpload} />
             {form.hero_image_url ? (
               <button
                 type="button"
                 disabled={uploading}
                 onClick={() => void handleRemoveHero()}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 text-sm font-semibold text-red-400 transition hover:bg-red-500/15"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 text-sm font-semibold text-red-400"
               >
                 <Trash2 size={16} />
                 {dict.remove}
@@ -266,89 +262,27 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
       </section>
 
       <section className="glass rounded-2xl p-5 sm:p-6">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-cyan">
-          {dict.bilingualHint}
-        </p>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-cyan">{dict.bilingualHint}</p>
         <div className="grid gap-4 md:grid-cols-2">
-          <AdminTextarea
-            label="Hero Title (AR)"
-            value={form.hero_title_ar}
-            onChange={(e) => updateField('hero_title_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminTextarea
-            label="Hero Title (EN)"
-            value={form.hero_title_en}
-            onChange={(e) => updateField('hero_title_en', e.target.value)}
-            dir="ltr"
-          />
-          <AdminTextarea
-            label="Hero Subtitle (AR)"
-            value={form.hero_subtitle_ar}
-            onChange={(e) => updateField('hero_subtitle_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminTextarea
-            label="Hero Subtitle (EN)"
-            value={form.hero_subtitle_en}
-            onChange={(e) => updateField('hero_subtitle_en', e.target.value)}
-            dir="ltr"
-          />
-          <AdminInput
-            label="Main Heading (AR)"
-            value={form.main_heading_ar}
-            onChange={(e) => updateField('main_heading_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminInput
-            label="Main Heading (EN)"
-            value={form.main_heading_en}
-            onChange={(e) => updateField('main_heading_en', e.target.value)}
-            dir="ltr"
-          />
-          <AdminTextarea
-            label="Complex Overview (AR)"
-            value={form.complex_overview_ar}
-            onChange={(e) => updateField('complex_overview_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminTextarea
-            label="Complex Overview (EN)"
-            value={form.complex_overview_en}
-            onChange={(e) => updateField('complex_overview_en', e.target.value)}
-            dir="ltr"
-          />
-          <AdminInput
-            label="Facilities Heading (AR)"
-            value={form.facilities_heading_ar}
-            onChange={(e) => updateField('facilities_heading_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminInput
-            label="Facilities Heading (EN)"
-            value={form.facilities_heading_en}
-            onChange={(e) => updateField('facilities_heading_en', e.target.value)}
-            dir="ltr"
-          />
-          <AdminTextarea
-            label="Facilities Intro (AR)"
-            value={form.facilities_intro_ar}
-            onChange={(e) => updateField('facilities_intro_ar', e.target.value)}
-            dir="rtl"
-          />
-          <AdminTextarea
-            label="Facilities Intro (EN)"
-            value={form.facilities_intro_en}
-            onChange={(e) => updateField('facilities_intro_en', e.target.value)}
-            dir="ltr"
-          />
+          <AdminTextarea label="Hero Title (AR)" value={form.hero_title_ar} onChange={(e) => updateField('hero_title_ar', e.target.value)} dir="rtl" />
+          <AdminTextarea label="Hero Title (EN)" value={form.hero_title_en} onChange={(e) => updateField('hero_title_en', e.target.value)} dir="ltr" />
+          <AdminTextarea label="Hero Subtitle (AR)" value={form.hero_subtitle_ar} onChange={(e) => updateField('hero_subtitle_ar', e.target.value)} dir="rtl" />
+          <AdminTextarea label="Hero Subtitle (EN)" value={form.hero_subtitle_en} onChange={(e) => updateField('hero_subtitle_en', e.target.value)} dir="ltr" />
+          <AdminInput label="Main Heading (AR)" value={form.main_heading_ar} onChange={(e) => updateField('main_heading_ar', e.target.value)} dir="rtl" />
+          <AdminInput label="Main Heading (EN)" value={form.main_heading_en} onChange={(e) => updateField('main_heading_en', e.target.value)} dir="ltr" />
+          <AdminTextarea label="Complex Overview (AR)" value={form.complex_overview_ar} onChange={(e) => updateField('complex_overview_ar', e.target.value)} dir="rtl" />
+          <AdminTextarea label="Complex Overview (EN)" value={form.complex_overview_en} onChange={(e) => updateField('complex_overview_en', e.target.value)} dir="ltr" />
+          <AdminInput label="Facilities Heading (AR)" value={form.facilities_heading_ar} onChange={(e) => updateField('facilities_heading_ar', e.target.value)} dir="rtl" />
+          <AdminInput label="Facilities Heading (EN)" value={form.facilities_heading_en} onChange={(e) => updateField('facilities_heading_en', e.target.value)} dir="ltr" />
+          <AdminTextarea label="Facilities Intro (AR)" value={form.facilities_intro_ar} onChange={(e) => updateField('facilities_intro_ar', e.target.value)} dir="rtl" />
+          <AdminTextarea label="Facilities Intro (EN)" value={form.facilities_intro_en} onChange={(e) => updateField('facilities_intro_en', e.target.value)} dir="ltr" />
         </div>
       </section>
 
       <button
         type="submit"
         disabled={saving}
-        className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand-gradient px-6 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-70"
+        className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand-gradient px-6 text-sm font-bold text-white disabled:opacity-70"
       >
         {saving ? dict.saving : dict.save}
       </button>

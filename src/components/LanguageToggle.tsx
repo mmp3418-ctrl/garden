@@ -1,20 +1,15 @@
 import type { FC } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 
-interface LanguageToggleProps {
-  className?: string
-}
-
-const LanguageToggle: FC<LanguageToggleProps> = ({ className = '' }) => {
-  const { language, toggleLanguage, t } = useLanguage()
+const LanguageToggle: FC = () => {
+  const { language, toggleLanguage } = useLanguage()
 
   return (
     <button
       type="button"
       onClick={toggleLanguage}
-      aria-label={t.a11y.toggleLanguage}
-      title={t.a11y.toggleLanguage}
-      className={`nav-control touch-target inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-3 font-display text-xs font-bold tracking-wide text-[var(--text-primary)] transition hover:border-[var(--glass-border-hover)] hover:text-cyan ${className}`}
+      aria-label="Toggle language"
+      className="nav-control touch-target inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-3 font-display text-xs font-bold text-[var(--text-primary)] transition hover:text-cyan"
     >
       {language === 'ar' ? 'EN' : 'ع'}
     </button>

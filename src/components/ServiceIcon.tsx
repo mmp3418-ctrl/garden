@@ -33,22 +33,14 @@ export const SERVICE_ICON_OPTIONS = [
   'Bath',
 ] as const
 
-export type ServiceIconName = (typeof SERVICE_ICON_OPTIONS)[number]
-
 interface ServiceIconProps {
   name?: string | null
   className?: string
-  size?: number
 }
 
-const ServiceIcon: FC<ServiceIconProps> = ({
-  name,
-  className = 'h-6 w-6',
-  size,
-}) => {
-  const key = (name ?? '').trim().toLowerCase()
-  const Icon = iconMap[key] ?? Waves
-  return <Icon className={className} size={size} aria-hidden="true" />
+const ServiceIcon: FC<ServiceIconProps> = ({ name, className = 'h-6 w-6' }) => {
+  const Icon = iconMap[(name ?? '').trim().toLowerCase()] ?? Waves
+  return <Icon className={className} aria-hidden="true" />
 }
 
 export default ServiceIcon

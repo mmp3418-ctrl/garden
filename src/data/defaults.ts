@@ -1,0 +1,32 @@
+import type { SiteSettings } from '../types'
+
+/** Empty defaults for admin forms when site_settings row is missing. */
+export const defaultSettings: SiteSettings = {
+  id: 1,
+  hero_title_ar: null,
+  hero_title_en: null,
+  hero_subtitle_ar: null,
+  hero_subtitle_en: null,
+  main_heading_ar: null,
+  main_heading_en: null,
+  complex_overview_ar: null,
+  complex_overview_en: null,
+  facilities_heading_ar: null,
+  facilities_heading_en: null,
+  facilities_intro_ar: null,
+  facilities_intro_en: null,
+  about_ar: null,
+  about_en: null,
+  vision_ar: null,
+  vision_en: null,
+  mission_ar: null,
+  mission_en: null,
+  phone: null,
+  whatsapp: null,
+  email: 'info@garden-city.com.ly',
+  address_ar: 'طريق المطار، سيدي صليم، طرابلس - ليبيا',
+  address_en: 'Airport St., Sedy Slem, Tripoli - Libya',
+  map_url: 'https://maps.google.com/?q=32.794930,13.134346',
+  hero_image_url: null,
+  updated_at: new Date().toISOString(),
+}

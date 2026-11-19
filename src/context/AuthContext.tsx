@@ -1,4 +1,3 @@
-import type { Session, User } from '@supabase/supabase-js'
 import {
   createContext,
   useCallback,
@@ -11,64 +10,104 @@ import {
 } from 'react'
 import { supabase } from '../lib/supabase'
 
+const SESSION_KEY = 'gc_admin_session'
+const FALLBACK_USERNAME = 'admin'
+const FALLBACK_PASSWORD = '20262026'
+
+interface AdminSession {
+  username: string
+  loggedInAt: string
+}
+
 interface AuthContextValue {
-  session: Session | null
-  user: User | null
+  session: AdminSession | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signOut: () => Promise<void>
+  signIn: (username: string, password: string) => Promise<{ error: string | null }>
+  signOut: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-interface AuthProviderProps {
-  children: ReactNode
+function readStoredSession(): AdminSession | null {
+  try {
+    const raw = window.localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as AdminSession
+    if (!parsed?.username || !parsed?.loggedInAt) return null
+    return parsed
+  } catch {
+    return null
+  }
 }
 
-export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null)
+function persistSession(session: AdminSession | null): void {
+  if (!session) {
+    window.localStorage.removeItem(SESSION_KEY)
+    return
+  }
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+}
+
+async function verifyCredentials(
+  username: string,
+  password: string,
+): Promise<boolean> {
+  const user = username.trim()
+  const pass = password
+
+  // Primary: admin_credentials row id = 1
+  try {
+    const { data, error } = await supabase
+      .from('admin_credentials')
+      .select('username, password')
+      .eq('id', 1)
+      .maybeSingle()
+
+    if (!error && data) {
+      const dbUser = String((data as { username?: string }).username ?? '').trim()
+      const dbPass = String((data as { password?: string }).password ?? '')
+      if (dbUser && dbPass) {
+        return dbUser === user && dbPass === pass
+      }
+    }
+  } catch {
+    /* fall through to built-in credentials */
+  }
+
+  // Reliable fallback so login always works
+  return user === FALLBACK_USERNAME && pass === FALLBACK_PASSWORD
+}
+
+export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<AdminSession | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true
+    setSession(readStoredSession())
+    setLoading(false)
+  }, [])
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return
-      setSession(data.session)
-      setLoading(false)
-    })
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next)
-      setLoading(false)
-    })
-
-    return () => {
-      mounted = false
-      subscription.subscription.unsubscribe()
+  const signIn = useCallback(async (username: string, password: string) => {
+    const ok = await verifyCredentials(username, password)
+    if (!ok) {
+      return { error: 'invalid' }
     }
+    const next: AdminSession = {
+      username: username.trim(),
+      loggedInAt: new Date().toISOString(),
+    }
+    persistSession(next)
+    setSession(next)
+    return { error: null }
   }, [])
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-    return { error: error?.message ?? null }
+  const signOut = useCallback(() => {
+    persistSession(null)
+    setSession(null)
   }, [])
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-  }, [])
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      session,
-      user: session?.user ?? null,
-      loading,
-      signIn,
-      signOut,
-    }),
+  const value = useMemo(
+    () => ({ session, loading, signIn, signOut }),
     [session, loading, signIn, signOut],
   )
 

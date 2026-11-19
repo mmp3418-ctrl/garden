@@ -8,70 +8,49 @@ import {
   type FC,
   type ReactNode,
 } from 'react'
-import { translations, type Dictionary } from '../i18n/translations'
 import type { Language } from '../types'
 
 interface LanguageContextValue {
   language: Language
   dir: 'rtl' | 'ltr'
-  t: Dictionary
   toggleLanguage: () => void
-  setLanguage: (language: Language) => void
 }
 
 const STORAGE_KEY = 'garden-city-language'
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 function getInitialLanguage(): Language {
-  // Default locale is Arabic (RTL). Persisted choice still wins after first toggle.
   if (typeof window === 'undefined') return 'ar'
-  const stored = window.localStorage.getItem(STORAGE_KEY)
-  if (stored === 'en') return 'en'
-  return 'ar'
+  return window.localStorage.getItem(STORAGE_KEY) === 'en' ? 'en' : 'ar'
 }
 
-interface LanguageProviderProps {
-  children: ReactNode
-}
-
-export const LanguageProvider: FC<LanguageProviderProps> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage)
+export const LanguageProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>(getInitialLanguage)
 
   useEffect(() => {
-    const dir = language === 'ar' ? 'rtl' : 'ltr'
     document.documentElement.lang = language
-    document.documentElement.dir = dir
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'
     window.localStorage.setItem(STORAGE_KEY, language)
   }, [language])
 
-  const setLanguage = useCallback((next: Language) => {
-    setLanguageState(next)
-  }, [])
-
   const toggleLanguage = useCallback(() => {
-    setLanguageState((prev) => (prev === 'ar' ? 'en' : 'ar'))
+    setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'))
   }, [])
 
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,
       dir: language === 'ar' ? 'rtl' : 'ltr',
-      t: translations[language],
       toggleLanguage,
-      setLanguage,
     }),
-    [language, toggleLanguage, setLanguage],
+    [language, toggleLanguage],
   )
 
-  return (
-    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
-  )
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }
 
 export function useLanguage(): LanguageContextValue {
-  const context = useContext(LanguageContext)
-  if (!context) {
-    throw new Error('useLanguage must be used within LanguageProvider')
-  }
-  return context
+  const ctx = useContext(LanguageContext)
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider')
+  return ctx
 }

@@ -1,34 +1,37 @@
 import {
-  ExternalLink,
   Image as ImageIcon,
   LayoutDashboard,
   LogOut,
+  MapPin,
   MessageSquare,
   Settings2,
   Sparkles,
 } from 'lucide-react'
-import { useEffect, useState, type FC } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useState, type FC } from 'react'
 import LanguageToggle from '../components/LanguageToggle'
 import ThemeToggle from '../components/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { BRAND_NAME } from '../data/content'
+import { supabase } from '../lib/supabase'
 import AdminLogin from './AdminLogin'
 import AdminToast, { type ToastState } from './components/AdminToast'
+import StatsCards from './components/StatsCards'
 import { getAdminDict } from './i18n'
 import ContactTab from './tabs/ContactTab'
 import GalleryTab from './tabs/GalleryTab'
+import InboxSecurityTab from './tabs/InboxSecurityTab'
 import ServicesTab from './tabs/ServicesTab'
 import SiteSettingsTab from './tabs/SiteSettingsTab'
 
-type TabId = 'site' | 'services' | 'gallery' | 'contact'
+type TabId = 'site' | 'services' | 'gallery' | 'contact' | 'inbox'
 
 const tabs: Array<{ id: TabId; icon: typeof Settings2 }> = [
   { id: 'site', icon: Settings2 },
   { id: 'services', icon: Sparkles },
   { id: 'gallery', icon: ImageIcon },
-  { id: 'contact', icon: MessageSquare },
+  { id: 'contact', icon: MapPin },
+  { id: 'inbox', icon: MessageSquare },
 ]
 
 const AdminDashboard: FC = () => {
@@ -37,6 +40,10 @@ const AdminDashboard: FC = () => {
   const { session, loading, signOut } = useAuth()
   const [activeTab, setActiveTab] = useState<TabId>('site')
   const [toast, setToast] = useState<ToastState>(null)
+  const [facilities, setFacilities] = useState(0)
+  const [galleryCount, setGalleryCount] = useState(0)
+  const [unread, setUnread] = useState(0)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
   useEffect(() => {
     if (!toast) return
@@ -44,17 +51,35 @@ const AdminDashboard: FC = () => {
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  const refreshStats = useCallback(async () => {
+    const [servicesRes, galleryRes, messagesRes, settingsRes] = await Promise.all([
+      supabase.from('services').select('id', { count: 'exact', head: true }),
+      supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
+      supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('is_read', false),
+      supabase.from('site_settings').select('updated_at').eq('id', 1).maybeSingle(),
+    ])
+
+    setFacilities(servicesRes.count ?? 0)
+    setGalleryCount(galleryRes.count ?? 0)
+    setUnread(messagesRes.count ?? 0)
+    const updated = (settingsRes.data as { updated_at?: string } | null)?.updated_at ?? null
+    setLastUpdated(updated)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    void refreshStats()
+  }, [session, refreshStats, activeTab])
+
   if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-page text-primary">
-        <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
       </div>
     )
   }
 
-  if (!session) {
-    return <AdminLogin embedded />
-  }
+  if (!session) return <AdminLogin />
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-page text-primary">
@@ -70,25 +95,18 @@ const AdminDashboard: FC = () => {
               <p className="truncate font-display text-sm font-semibold text-cyan" dir="ltr">
                 {BRAND_NAME}
               </p>
-              <p className="truncate text-xs text-[var(--text-muted)]">{dict.dashboard}</p>
+              <p className="truncate text-xs text-[var(--text-muted)]">
+                {dict.dashboard} · {session.username}
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <LanguageToggle />
             <ThemeToggle />
-            <Link
-              to="/"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--nav-control-border)] bg-[var(--nav-control-bg)] px-3 text-xs font-semibold"
-            >
-              <ExternalLink size={14} />
-              {dict.viewLive}
-            </Link>
             <button
               type="button"
-              onClick={() => void signOut()}
+              onClick={signOut}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
             >
               <LogOut size={14} />
@@ -99,6 +117,15 @@ const AdminDashboard: FC = () => {
       </header>
 
       <div className="container-site py-6 sm:py-8">
+        <StatsCards
+          dict={dict}
+          facilities={facilities}
+          gallery={galleryCount}
+          unread={unread}
+          lastUpdated={lastUpdated}
+          language={language}
+        />
+
         <nav className="mb-6 flex gap-2 overflow-x-auto pb-1">
           {tabs.map(({ id, icon: Icon }) => {
             const active = activeTab === id
@@ -120,20 +147,41 @@ const AdminDashboard: FC = () => {
           })}
         </nav>
 
-        <div className="min-w-0">
-          {activeTab === 'site' ? (
-            <SiteSettingsTab dict={dict} onToast={setToast} />
-          ) : null}
-          {activeTab === 'services' ? (
-            <ServicesTab dict={dict} onToast={setToast} />
-          ) : null}
-          {activeTab === 'gallery' ? (
-            <GalleryTab dict={dict} onToast={setToast} />
-          ) : null}
-          {activeTab === 'contact' ? (
-            <ContactTab dict={dict} onToast={setToast} />
-          ) : null}
-        </div>
+        {activeTab === 'site' ? (
+          <SiteSettingsTab
+            dict={dict}
+            onToast={setToast}
+            onSaved={() => void refreshStats()}
+          />
+        ) : null}
+        {activeTab === 'services' ? (
+          <ServicesTab
+            dict={dict}
+            onToast={setToast}
+            onChanged={() => void refreshStats()}
+          />
+        ) : null}
+        {activeTab === 'gallery' ? (
+          <GalleryTab
+            dict={dict}
+            onToast={setToast}
+            onChanged={() => void refreshStats()}
+          />
+        ) : null}
+        {activeTab === 'contact' ? (
+          <ContactTab
+            dict={dict}
+            onToast={setToast}
+            onSaved={() => void refreshStats()}
+          />
+        ) : null}
+        {activeTab === 'inbox' ? (
+          <InboxSecurityTab
+            dict={dict}
+            onToast={setToast}
+            onChanged={() => void refreshStats()}
+          />
+        ) : null}
       </div>
 
       <AdminToast toast={toast} onClose={() => setToast(null)} />

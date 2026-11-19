@@ -25,14 +25,10 @@ export async function uploadMediaFile(
     contentType: file.type || undefined,
   })
 
-  if (error) {
-    throw new Error(error.message || 'Upload failed')
-  }
+  if (error) throw new Error(error.message || 'Upload failed')
 
   const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
-  if (!data.publicUrl) {
-    throw new Error('Could not resolve public URL for uploaded file')
-  }
+  if (!data.publicUrl) throw new Error('Could not resolve public URL')
 
   return { publicUrl: data.publicUrl, path }
 }
@@ -52,7 +48,5 @@ export async function deleteMediaByPublicUrl(publicUrl: string): Promise<void> {
   const path = extractStoragePathFromPublicUrl(publicUrl)
   if (!path) return
   const { error } = await supabase.storage.from(MEDIA_BUCKET).remove([path])
-  if (error) {
-    throw new Error(error.message || 'Failed to delete media file')
-  }
+  if (error) throw new Error(error.message || 'Failed to delete media file')
 }

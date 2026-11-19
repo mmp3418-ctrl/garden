@@ -1,4 +1,4 @@
-import { seedSettings } from '../data/seedContent'
+import { defaultSettings } from '../data/defaults'
 import type { SiteSettings } from '../types'
 import { hasText } from './locale'
 
@@ -11,9 +11,8 @@ function coalesce(
   return null
 }
 
-/** Normalize a DB row (partial / legacy columns) onto the full SiteSettings shape. */
 export function mergeSettings(row: Partial<SiteSettings> | null | undefined): SiteSettings {
-  const base = seedSettings
+  const base = defaultSettings
   if (!row) return { ...base }
 
   return {
@@ -22,38 +21,14 @@ export function mergeSettings(row: Partial<SiteSettings> | null | undefined): Si
     hero_title_en: coalesce(row.hero_title_en, base.hero_title_en),
     hero_subtitle_ar: coalesce(row.hero_subtitle_ar, base.hero_subtitle_ar),
     hero_subtitle_en: coalesce(row.hero_subtitle_en, base.hero_subtitle_en),
-    main_heading_ar: coalesce(
-      row.main_heading_ar,
-      coalesce(row.hero_title_ar, base.main_heading_ar),
-    ),
-    main_heading_en: coalesce(
-      row.main_heading_en,
-      coalesce(row.hero_title_en, base.main_heading_en),
-    ),
-    complex_overview_ar: coalesce(
-      row.complex_overview_ar,
-      coalesce(row.about_ar, base.complex_overview_ar),
-    ),
-    complex_overview_en: coalesce(
-      row.complex_overview_en,
-      coalesce(row.about_en, base.complex_overview_en),
-    ),
-    facilities_heading_ar: coalesce(
-      row.facilities_heading_ar,
-      coalesce(row.vision_ar, base.facilities_heading_ar),
-    ),
-    facilities_heading_en: coalesce(
-      row.facilities_heading_en,
-      coalesce(row.vision_en, base.facilities_heading_en),
-    ),
-    facilities_intro_ar: coalesce(
-      row.facilities_intro_ar,
-      coalesce(row.mission_ar, base.facilities_intro_ar),
-    ),
-    facilities_intro_en: coalesce(
-      row.facilities_intro_en,
-      coalesce(row.mission_en, base.facilities_intro_en),
-    ),
+    main_heading_ar: coalesce(row.main_heading_ar, base.main_heading_ar),
+    main_heading_en: coalesce(row.main_heading_en, base.main_heading_en),
+    complex_overview_ar: coalesce(row.complex_overview_ar, coalesce(row.about_ar, base.complex_overview_ar)),
+    complex_overview_en: coalesce(row.complex_overview_en, coalesce(row.about_en, base.complex_overview_en)),
+    facilities_heading_ar: coalesce(row.facilities_heading_ar, coalesce(row.vision_ar, base.facilities_heading_ar)),
+    facilities_heading_en: coalesce(row.facilities_heading_en, coalesce(row.vision_en, base.facilities_heading_en)),
+    facilities_intro_ar: coalesce(row.facilities_intro_ar, coalesce(row.mission_ar, base.facilities_intro_ar)),
+    facilities_intro_en: coalesce(row.facilities_intro_en, coalesce(row.mission_en, base.facilities_intro_en)),
     about_ar: coalesce(row.about_ar, coalesce(row.complex_overview_ar, base.about_ar)),
     about_en: coalesce(row.about_en, coalesce(row.complex_overview_en, base.about_en)),
     vision_ar: coalesce(row.vision_ar, coalesce(row.facilities_heading_ar, base.vision_ar)),

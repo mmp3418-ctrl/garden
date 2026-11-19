@@ -1,16 +1,17 @@
-import { CheckCheck, Mail, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FC, type FormEvent } from 'react'
-import { seedSettings } from '../../data/seedContent'
+import { defaultSettings } from '../../data/defaults'
 import { supabase } from '../../lib/supabase'
-import type { ContactMessage, SiteSettings } from '../../types'
+import type { SiteSettings } from '../../types'
+import { toMapEmbedUrl } from '../../utils/map'
 import { mergeSettings } from '../../utils/siteSettings'
-import type { AdminDictionary } from '../i18n'
 import { AdminInput, AdminTextarea } from '../components/AdminField'
 import type { ToastState } from '../components/AdminToast'
+import type { AdminDictionary } from '../i18n'
 
-interface ContactTabProps {
+interface Props {
   dict: AdminDictionary
   onToast: (toast: ToastState) => void
+  onSaved?: () => void
 }
 
 type ContactForm = {
@@ -33,18 +34,16 @@ function toForm(settings: SiteSettings): ContactForm {
   }
 }
 
-const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
+const ContactTab: FC<Props> = ({ dict, onToast, onSaved }) => {
   const [rowId, setRowId] = useState<string | number>(1)
-  const [form, setForm] = useState<ContactForm>(toForm(seedSettings))
-  const [messages, setMessages] = useState<ContactMessage[]>([])
+  const [form, setForm] = useState<ContactForm>(toForm(defaultSettings))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   const load = async (): Promise<void> => {
     setLoading(true)
-
-    const byId = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
     let settingsRow: SiteSettings | null = null
+    const byId = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
     if (!byId.error && byId.data) {
       settingsRow = byId.data as SiteSettings
     } else {
@@ -54,11 +53,8 @@ const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
         .order('id', { ascending: true })
         .limit(1)
         .maybeSingle()
-      if (fallback.error) {
-        onToast({ type: 'error', message: fallback.error.message || dict.error })
-      } else if (fallback.data) {
-        settingsRow = fallback.data as SiteSettings
-      }
+      if (fallback.error) onToast({ type: 'error', message: fallback.error.message || dict.error })
+      else if (fallback.data) settingsRow = fallback.data as SiteSettings
     }
 
     if (settingsRow) {
@@ -66,19 +62,6 @@ const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
       setForm(toForm(merged))
       setRowId(merged.id)
     }
-
-    const messagesRes = await supabase
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (messagesRes.error) {
-      onToast({ type: 'error', message: messagesRes.error.message || dict.error })
-      setMessages([])
-    } else {
-      setMessages((messagesRes.data as ContactMessage[]) ?? [])
-    }
-
     setLoading(false)
   }
 
@@ -100,7 +83,6 @@ const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
         map_url: form.map_url.trim() || null,
         updated_at: new Date().toISOString(),
       }
-
       let { error } = await supabase.from('site_settings').update(payload).eq('id', rowId)
       if (error) {
         const upsert = await supabase
@@ -110,91 +92,30 @@ const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
       }
       if (error) throw new Error(error.message)
       onToast({ type: 'success', message: dict.saved })
+      onSaved?.()
       await load()
     } catch (err) {
-      onToast({
-        type: 'error',
-        message: err instanceof Error ? err.message : dict.error,
-      })
+      onToast({ type: 'error', message: err instanceof Error ? err.message : dict.error })
     } finally {
       setSaving(false)
     }
   }
 
-  const toggleRead = async (message: ContactMessage): Promise<void> => {
-    const next = !(message.is_read ?? false)
-    const { error } = await supabase
-      .from('contact_messages')
-      .update({ is_read: next })
-      .eq('id', message.id)
-    if (error) {
-      onToast({ type: 'error', message: error.message || dict.error })
-      return
-    }
-    setMessages((prev) =>
-      prev.map((m) => (m.id === message.id ? { ...m, is_read: next } : m)),
-    )
-  }
+  if (loading) return <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
 
-  const handleDelete = async (id: string): Promise<void> => {
-    if (!window.confirm(dict.confirmDelete)) return
-    const { error } = await supabase.from('contact_messages').delete().eq('id', id)
-    if (error) {
-      onToast({ type: 'error', message: error.message || dict.error })
-      return
-    }
-    setMessages((prev) => prev.filter((m) => m.id !== id))
-    onToast({ type: 'success', message: dict.saved })
-  }
-
-  if (loading) {
-    return <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
-  }
+  const embed = toMapEmbedUrl(form.map_url)
 
   return (
     <div className="space-y-6">
       <form onSubmit={(e) => void handleSave(e)} className="glass rounded-2xl p-5 sm:p-6">
-        <h3 className="mb-4 text-base font-bold text-[var(--text-primary)]">
-          {dict.tabs.contact}
-        </h3>
+        <h3 className="mb-4 text-base font-bold">{dict.tabs.contact}</h3>
         <div className="grid gap-4 md:grid-cols-2">
-          <AdminInput
-            label="Phone"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            dir="ltr"
-          />
-          <AdminInput
-            label="WhatsApp"
-            value={form.whatsapp}
-            onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-            dir="ltr"
-          />
-          <AdminInput
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            dir="ltr"
-          />
-          <AdminInput
-            label="Map URL"
-            value={form.map_url}
-            onChange={(e) => setForm({ ...form, map_url: e.target.value })}
-            dir="ltr"
-          />
-          <AdminTextarea
-            label="Address (AR)"
-            value={form.address_ar}
-            onChange={(e) => setForm({ ...form, address_ar: e.target.value })}
-            dir="rtl"
-          />
-          <AdminTextarea
-            label="Address (EN)"
-            value={form.address_en}
-            onChange={(e) => setForm({ ...form, address_en: e.target.value })}
-            dir="ltr"
-          />
+          <AdminInput label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" />
+          <AdminInput label="WhatsApp" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} dir="ltr" />
+          <AdminInput label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" />
+          <AdminInput label="Map URL" value={form.map_url} onChange={(e) => setForm({ ...form, map_url: e.target.value })} dir="ltr" />
+          <AdminTextarea label="Address (AR)" value={form.address_ar} onChange={(e) => setForm({ ...form, address_ar: e.target.value })} dir="rtl" />
+          <AdminTextarea label="Address (EN)" value={form.address_en} onChange={(e) => setForm({ ...form, address_en: e.target.value })} dir="ltr" />
         </div>
         <button
           type="submit"
@@ -205,72 +126,20 @@ const ContactTab: FC<ContactTabProps> = ({ dict, onToast }) => {
         </button>
       </form>
 
-      <section className="space-y-3">
-        <h3 className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)]">
-          <Mail size={18} className="text-cyan" />
-          Inbox
-        </h3>
-
-        {messages.length === 0 ? (
-          <div className="glass rounded-2xl p-8 text-center text-sm text-[var(--text-muted)]">
-            {dict.noMessages}
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {messages.map((message) => {
-              const read = Boolean(message.is_read)
-              return (
-                <li
-                  key={message.id}
-                  className={`glass rounded-2xl p-4 sm:p-5 ${read ? 'opacity-80' : 'border-cyan/25'}`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-[var(--text-primary)]">{message.full_name}</p>
-                      <p className="mt-1 text-sm text-[var(--text-muted)]" dir="ltr">
-                        {message.email}
-                        {message.phone ? ` · ${message.phone}` : ''}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--text-muted)]" dir="ltr">
-                        {new Date(message.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        read
-                          ? 'bg-white/10 text-[var(--text-muted)]'
-                          : 'bg-cyan/15 text-cyan'
-                      }`}
-                    >
-                      {read ? 'Read' : 'New'}
-                    </span>
-                  </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
-                    {message.message}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void toggleRead(message)}
-                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-cyan/30 bg-cyan/10 px-3 text-xs font-semibold text-cyan"
-                    >
-                      <CheckCheck size={14} />
-                      {read ? dict.markUnread : dict.markRead}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(message.id)}
-                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
-                    >
-                      <Trash2 size={14} />
-                      {dict.delete}
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+      <section className="glass overflow-hidden rounded-2xl">
+        <div className="border-b border-[var(--glass-border)] px-4 py-3 sm:px-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">{dict.mapPreview}</h3>
+        </div>
+        <div className="relative aspect-[16/11] w-full bg-[var(--bg-deep)] sm:aspect-[16/9]">
+          <iframe
+            title={dict.mapPreview}
+            src={embed}
+            className="absolute inset-0 h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
       </section>
     </div>
   )
