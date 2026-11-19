@@ -51,7 +51,6 @@ export interface Dictionary {
     address: string
     phone: string
     email: string
-    management: string
     mapTitle: string
     openMaps: string
     call: string
@@ -69,7 +68,6 @@ export interface Dictionary {
     awaiting: string
     noServices: string
     noGallery: string
-    noContacts: string
     noMap: string
   }
   a11y: {
@@ -132,7 +130,6 @@ export const translations: Record<Language, Dictionary> = {
       address: 'العنوان',
       phone: 'الهاتف',
       email: 'البريد',
-      management: 'الإدارة المباشرة',
       mapTitle: 'موقعنا',
       openMaps: 'افتح الخريطة',
       call: 'اتصال',
@@ -150,7 +147,6 @@ export const translations: Record<Language, Dictionary> = {
       awaiting: 'بانتظار المحتوى من لوحة التحكم',
       noServices: 'لا توجد خدمات بعد',
       noGallery: 'بانتظار رفع الصورة',
-      noContacts: 'لا توجد جهات اتصال بعد',
       noMap: 'الخريطة ستظهر عند إضافة الرابط',
     },
     a11y: {
@@ -211,7 +207,6 @@ export const translations: Record<Language, Dictionary> = {
       address: 'Address',
       phone: 'Phone',
       email: 'Email',
-      management: 'Direct Management',
       mapTitle: 'Our Location',
       openMaps: 'Open map',
       call: 'Call',
@@ -229,7 +224,6 @@ export const translations: Record<Language, Dictionary> = {
       awaiting: 'Awaiting content from Dashboard',
       noServices: 'No services yet',
       noGallery: 'Awaiting photo upload',
-      noContacts: 'No management contacts yet',
       noMap: 'Map appears once a link is added',
     },
     a11y: {
