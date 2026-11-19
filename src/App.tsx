@@ -1,7 +1,6 @@
 import type { FC } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AdminDashboard from './admin/AdminDashboard'
-import AdminLogin from './admin/AdminLogin'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -15,8 +14,8 @@ const App: FC = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/login" element={<Navigate to="/admin" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

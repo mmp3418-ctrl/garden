@@ -1,6 +1,6 @@
 import { Lock, Mail } from 'lucide-react'
 import { useState, type FC, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import LanguageToggle from '../components/LanguageToggle'
 import ThemeToggle from '../components/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
@@ -8,18 +8,22 @@ import { useLanguage } from '../context/LanguageContext'
 import { BRAND_NAME } from '../data/content'
 import { getAdminDict } from './i18n'
 
-const AdminLogin: FC = () => {
+interface AdminLoginProps {
+  /** When true, skip redirect-if-session (used when embedded under /admin). */
+  embedded?: boolean
+}
+
+const AdminLogin: FC<AdminLoginProps> = ({ embedded = false }) => {
   const { language } = useLanguage()
   const dict = getAdminDict(language)
   const { session, loading, signIn } = useAuth()
-  const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!loading && session) {
+  if (!loading && session && !embedded) {
     return <Navigate to="/admin" replace />
   }
 
@@ -31,9 +35,7 @@ const AdminLogin: FC = () => {
     setSubmitting(false)
     if (result.error) {
       setError(result.error)
-      return
     }
-    navigate('/admin', { replace: true })
   }
 
   return (
@@ -105,6 +107,15 @@ const AdminLogin: FC = () => {
         >
           {submitting ? dict.signingIn : dict.signIn}
         </button>
+
+        <div className="mt-5 text-center">
+          <Link
+            to="/"
+            className="text-xs font-medium text-[var(--text-muted)] transition hover:text-cyan"
+          >
+            {dict.viewLive}
+          </Link>
+        </div>
       </form>
     </div>
   )

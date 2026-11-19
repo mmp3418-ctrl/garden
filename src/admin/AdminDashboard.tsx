@@ -8,12 +8,13 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useEffect, useState, type FC } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import LanguageToggle from '../components/LanguageToggle'
 import ThemeToggle from '../components/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { BRAND_NAME } from '../data/content'
+import AdminLogin from './AdminLogin'
 import AdminToast, { type ToastState } from './components/AdminToast'
 import { getAdminDict } from './i18n'
 import ContactTab from './tabs/ContactTab'
@@ -52,7 +53,7 @@ const AdminDashboard: FC = () => {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <AdminLogin embedded />
   }
 
   return (

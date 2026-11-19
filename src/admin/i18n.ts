@@ -50,7 +50,7 @@ const ar: AdminDictionary = {
   signIn: 'تسجيل الدخول',
   signingIn: 'جارٍ الدخول...',
   logout: 'تسجيل الخروج',
-  viewLive: 'عرض الموقع',
+  viewLive: 'فتح الموقع المباشر',
   dashboard: 'لوحة التحكم',
   tabs: {
     site: 'تعريف الموقع والخلفيات',
@@ -91,7 +91,7 @@ const en: AdminDictionary = {
   signIn: 'Sign In',
   signingIn: 'Signing in...',
   logout: 'Logout',
-  viewLive: 'View Live Website',
+  viewLive: 'Open Live Site',
   dashboard: 'Admin Dashboard',
   tabs: {
     site: 'Site Settings & Hero',

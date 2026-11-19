@@ -63,6 +63,7 @@ export interface Dictionary {
   }
   footer: {
     rights: string
+    admin: string
   }
   empty: {
     awaiting: string
@@ -142,6 +143,7 @@ export const translations: Record<Language, Dictionary> = {
     },
     footer: {
       rights: 'جميع الحقوق محفوظة.',
+      admin: 'لوحة التحكم',
     },
     empty: {
       awaiting: 'بانتظار المحتوى من لوحة التحكم',
@@ -219,6 +221,7 @@ export const translations: Record<Language, Dictionary> = {
     },
     footer: {
       rights: 'All rights reserved.',
+      admin: 'Admin',
     },
     empty: {
       awaiting: 'Awaiting content from Dashboard',

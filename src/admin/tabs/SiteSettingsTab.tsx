@@ -57,19 +57,28 @@ const SiteSettingsTab: FC<SiteSettingsTabProps> = ({ dict, onToast }) => {
 
   const load = async (): Promise<void> => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('*')
-      .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle()
 
-    if (error) {
-      onToast({ type: 'error', message: error.message || dict.error })
-      setForm(toForm(seedSettings))
-      setRowId(1)
-    } else if (data) {
-      const merged = mergeSettings(data as SiteSettings)
+    // Prefer the canonical row id = 1, then fall back to the first available row.
+    let row: SiteSettings | null = null
+    const byId = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
+    if (!byId.error && byId.data) {
+      row = byId.data as SiteSettings
+    } else {
+      const fallback = await supabase
+        .from('site_settings')
+        .select('*')
+        .order('id', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (fallback.error) {
+        onToast({ type: 'error', message: fallback.error.message || dict.error })
+      } else if (fallback.data) {
+        row = fallback.data as SiteSettings
+      }
+    }
+
+    if (row) {
+      const merged = mergeSettings(row)
       setForm(toForm(merged))
       setRowId(merged.id)
     } else {

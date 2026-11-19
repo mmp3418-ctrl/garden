@@ -1,5 +1,6 @@
 import { Mail } from 'lucide-react'
 import type { FC } from 'react'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 import { useSite } from '../context/SiteDataContext'
 import { BRAND_NAME, navItems } from '../data/content'
@@ -41,10 +42,16 @@ const Footer: FC = () => {
           </ul>
         </div>
 
-        <div className="mt-10 border-t border-[var(--glass-border)] pt-6 text-xs text-[var(--text-muted)]">
+        <div className="mt-10 flex flex-col gap-3 border-t border-[var(--glass-border)] pt-6 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
           <p dir="ltr">
             © {year} {BRAND_NAME}. {t.footer.rights}
           </p>
+          <Link
+            to="/admin"
+            className="opacity-45 transition hover:opacity-90 hover:text-cyan"
+          >
+            {t.footer.admin}
+          </Link>
         </div>
       </div>
     </footer>
