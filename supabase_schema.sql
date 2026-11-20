@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
   address_en text,
   map_url text,
   hero_image_url text,
+  logo_url text,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -39,6 +40,7 @@ ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS facilities_heading_en 
 ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS facilities_intro_ar text;
 ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS facilities_intro_en text;
 ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS whatsapp text;
+ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS logo_url text;
 
 CREATE TABLE IF NOT EXISTS public.services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -81,6 +81,12 @@ export interface AdminDictionary {
   sectionFacilities: string
   chars: string
   dragHandle: string
+  websiteLogo: string
+  logoHint: string
+  removeLogo: string
+  logoDarkPreview: string
+  logoLightPreview: string
+  logoUploading: string
 }
 
 const ar: AdminDictionary = {
@@ -164,6 +170,12 @@ const ar: AdminDictionary = {
   sectionFacilities: 'المرافق الترفيهية',
   chars: 'حرف',
   dragHandle: 'سحب لإعادة الترتيب',
+  websiteLogo: 'شعار الموقع',
+  logoHint: 'PNG, JPG, JPEG, WebP, SVG — اسحب وأفلت أو اختر ملفاً',
+  removeLogo: 'حذف الشعار',
+  logoDarkPreview: 'معاينة داكنة',
+  logoLightPreview: 'معاينة فاتحة',
+  logoUploading: 'جارٍ رفع الشعار...',
 }
 
 const en: AdminDictionary = {
@@ -247,6 +259,12 @@ const en: AdminDictionary = {
   sectionFacilities: 'Recreational Facilities',
   chars: 'chars',
   dragHandle: 'Drag to reorder',
+  websiteLogo: 'Website Logo',
+  logoHint: 'PNG, JPG, JPEG, WebP, SVG — drag & drop or choose a file',
+  removeLogo: 'Remove Logo',
+  logoDarkPreview: 'Dark preview',
+  logoLightPreview: 'Light preview',
+  logoUploading: 'Uploading logo...',
 }
 
 export function getAdminDict(language: Language): AdminDictionary {

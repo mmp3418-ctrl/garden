@@ -4,16 +4,16 @@ import AdminDashboard from './admin/AdminDashboard'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { ThemeProvider } from './context/ThemeContext'
+import HomePage from './pages/HomePage'
 
-/** Admin-only app: `/` is Login or Dashboard. No public website. */
 const App: FC = () => (
   <ThemeProvider>
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<AdminDashboard />} />
-            <Route path="/admin" element={<Navigate to="/" replace />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

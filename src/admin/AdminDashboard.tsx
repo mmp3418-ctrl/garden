@@ -44,6 +44,7 @@ const AdminDashboard: FC = () => {
   const [galleryCount, setGalleryCount] = useState(0)
   const [unread, setUnread] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!toast) return
@@ -56,14 +57,15 @@ const AdminDashboard: FC = () => {
       supabase.from('services').select('id', { count: 'exact', head: true }),
       supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
       supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('is_read', false),
-      supabase.from('site_settings').select('updated_at').eq('id', 1).maybeSingle(),
+      supabase.from('site_settings').select('updated_at, logo_url').eq('id', 1).maybeSingle(),
     ])
 
     setFacilities(servicesRes.count ?? 0)
     setGalleryCount(galleryRes.count ?? 0)
     setUnread(messagesRes.count ?? 0)
-    const updated = (settingsRes.data as { updated_at?: string } | null)?.updated_at ?? null
-    setLastUpdated(updated)
+    const row = settingsRes.data as { updated_at?: string; logo_url?: string | null } | null
+    setLastUpdated(row?.updated_at ?? null)
+    setLogoUrl(row?.logo_url?.trim() || null)
   }, [])
 
   useEffect(() => {
@@ -88,9 +90,13 @@ const AdminDashboard: FC = () => {
       <header className="nav-shell sticky top-0 z-40">
         <div className="container-site flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="inline-flex rounded-xl bg-brand-gradient p-2 text-white">
-              <LayoutDashboard size={16} />
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="h-9 w-auto max-w-[96px] object-contain" />
+            ) : (
+              <div className="inline-flex rounded-xl bg-brand-gradient p-2 text-white">
+                <LayoutDashboard size={16} />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-semibold text-cyan" dir="ltr">
                 {BRAND_NAME}

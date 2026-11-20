@@ -42,6 +42,7 @@ export function mergeSettings(row: Partial<SiteSettings> | null | undefined): Si
     address_en: coalesce(row.address_en, base.address_en),
     map_url: coalesce(row.map_url, base.map_url),
     hero_image_url: hasText(row.hero_image_url) ? row.hero_image_url!.trim() : null,
+    logo_url: hasText(row.logo_url) ? row.logo_url!.trim() : null,
     updated_at: row.updated_at ?? base.updated_at,
   }
 }

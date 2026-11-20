@@ -42,6 +42,7 @@ export const officialSettingsDefaults: SiteSettings = {
   address_en: 'Airport St., Sedy Slem, Tripoli - Libya',
   map_url: 'https://maps.google.com/?q=32.794930,13.134346',
   hero_image_url: null,
+  logo_url: null,
   updated_at: new Date().toISOString(),
 }
 

@@ -14,11 +14,17 @@ export function buildMediaPath(folder: string, fileName: string): string {
   return `${folder}/${stamp}-${safe}`
 }
 
-export async function uploadMediaFile(
-  folder: string,
+export function buildLogoPath(fileName: string): string {
+  const safe = sanitizeFileName(fileName) || 'logo.png'
+  const extMatch = safe.match(/\.([a-z0-9]+)$/i)
+  const ext = extMatch?.[1]?.toLowerCase() || 'png'
+  return `logos/logo-${Date.now()}.${ext}`
+}
+
+async function uploadToPath(
+  path: string,
   file: File,
 ): Promise<{ publicUrl: string; path: string }> {
-  const path = buildMediaPath(folder, file.name)
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
     cacheControl: '3600',
     upsert: false,
@@ -31,6 +37,19 @@ export async function uploadMediaFile(
   if (!data.publicUrl) throw new Error('Could not resolve public URL')
 
   return { publicUrl: data.publicUrl, path }
+}
+
+export async function uploadMediaFile(
+  folder: string,
+  file: File,
+): Promise<{ publicUrl: string; path: string }> {
+  return uploadToPath(buildMediaPath(folder, file.name), file)
+}
+
+export async function uploadLogoFile(
+  file: File,
+): Promise<{ publicUrl: string; path: string }> {
+  return uploadToPath(buildLogoPath(file.name), file)
 }
 
 export function extractStoragePathFromPublicUrl(publicUrl: string): string | null {

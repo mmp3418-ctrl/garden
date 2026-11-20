@@ -18,6 +18,7 @@ import { mergeSettings } from '../../utils/siteSettings'
 import { AdminTextarea } from '../components/AdminField'
 import type { ToastState } from '../components/AdminToast'
 import LivePreview, { type PreviewContent } from '../components/LivePreview'
+import LogoManager from '../components/LogoManager'
 import type { AdminDictionary } from '../i18n'
 
 interface Props {
@@ -26,8 +27,8 @@ interface Props {
   onSaved?: () => void
 }
 
-type FormState = PreviewContent
-type TextFieldKey = Exclude<keyof FormState, 'hero_image_url'>
+type FormState = PreviewContent & { logo_url: string }
+type TextFieldKey = Exclude<keyof FormState, 'hero_image_url' | 'logo_url'>
 
 function toForm(settings: SiteSettings): FormState {
   return {
@@ -44,6 +45,7 @@ function toForm(settings: SiteSettings): FormState {
     facilities_intro_ar: settings.facilities_intro_ar ?? '',
     facilities_intro_en: settings.facilities_intro_en ?? '',
     hero_image_url: settings.hero_image_url ?? '',
+    logo_url: settings.logo_url ?? '',
   }
 }
 
@@ -279,6 +281,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
         mission_ar: form.facilities_intro_ar.trim() || null,
         mission_en: form.facilities_intro_en.trim() || null,
         hero_image_url: form.hero_image_url.trim() || null,
+        logo_url: form.logo_url.trim() || null,
         updated_at: new Date().toISOString(),
       }
 
@@ -325,6 +328,18 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
 
       <div className={`grid gap-5 ${showPreview ? 'xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]' : ''}`}>
         <div className="space-y-4">
+          <LogoManager
+            dict={dict}
+            rowId={rowId}
+            logoUrl={form.logo_url}
+            onLogoChange={(url) => {
+              setForm((prev) => ({ ...prev, logo_url: url }))
+              setBaseline((prev) => ({ ...prev, logo_url: url }))
+            }}
+            onToast={onToast}
+            onSaved={onSaved}
+          />
+
           <Collapsible title={dict.sectionHero} open={openHero} onToggle={() => setOpenHero((v) => !v)}>
             <div className="mb-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-deep)]">
