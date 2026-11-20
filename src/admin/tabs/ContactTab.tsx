@@ -120,7 +120,7 @@ const ContactTab: FC<Props> = ({ dict, onToast, onSaved }) => {
         <button
           type="submit"
           disabled={saving}
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-70"
+          className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-70 sm:w-auto"
         >
           {saving ? dict.saving : dict.save}
         </button>

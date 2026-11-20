@@ -87,6 +87,10 @@ export interface AdminDictionary {
   logoDarkPreview: string
   logoLightPreview: string
   logoUploading: string
+  logoUrlLabel: string
+  logoUrlPlaceholder: string
+  logoUrlHint: string
+  applyLogoUrl: string
 }
 
 const ar: AdminDictionary = {
@@ -116,7 +120,7 @@ const ar: AdminDictionary = {
     updated: 'آخر تحديث',
   },
   save: 'حفظ',
-  saveAll: 'حفظ جميع التغييرات',
+  saveAll: 'حفظ التغييرات',
   saving: 'جارٍ الحفظ...',
   saved: 'تم الحفظ بنجاح',
   error: 'حدث خطأ، حاول مرة أخرى',
@@ -176,6 +180,10 @@ const ar: AdminDictionary = {
   logoDarkPreview: 'معاينة داكنة',
   logoLightPreview: 'معاينة فاتحة',
   logoUploading: 'جارٍ رفع الشعار...',
+  logoUrlLabel: 'رابط الشعار / المسار',
+  logoUrlPlaceholder: 'https://... أو /logo.png',
+  logoUrlHint: 'الصق رابط صورة مباشر أو مساراً نسبياً ثم اضغط تطبيق',
+  applyLogoUrl: 'تطبيق الرابط',
 }
 
 const en: AdminDictionary = {
@@ -205,7 +213,7 @@ const en: AdminDictionary = {
     updated: 'Last Updated',
   },
   save: 'Save',
-  saveAll: 'Save All Changes',
+  saveAll: 'Save Changes',
   saving: 'Saving...',
   saved: 'Saved successfully',
   error: 'Something went wrong. Try again.',
@@ -265,6 +273,10 @@ const en: AdminDictionary = {
   logoDarkPreview: 'Dark preview',
   logoLightPreview: 'Light preview',
   logoUploading: 'Uploading logo...',
+  logoUrlLabel: 'Logo URL / Path',
+  logoUrlPlaceholder: 'https://... or /logo.png',
+  logoUrlHint: 'Paste a direct image URL or relative path, then apply',
+  applyLogoUrl: 'Apply URL',
 }
 
 export function getAdminDict(language: Language): AdminDictionary {

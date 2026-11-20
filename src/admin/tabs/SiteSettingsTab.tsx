@@ -14,6 +14,7 @@ import { officialSettingsDefaults, OFFICIAL_TEXT, type OfficialTextKey } from '.
 import { deleteMediaByPublicUrl, uploadMediaFile } from '../../lib/storage'
 import { supabase } from '../../lib/supabase'
 import type { ServiceRow, SiteSettings } from '../../types'
+import { withCacheBust } from '../../utils/mediaUrl'
 import { mergeSettings } from '../../utils/siteSettings'
 import { AdminTextarea } from '../components/AdminField'
 import type { ToastState } from '../components/AdminToast'
@@ -285,15 +286,29 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
         updated_at: new Date().toISOString(),
       }
 
+      const normalizedId = rowId === 1 || rowId === '1' ? 1 : rowId
       let { error } = await supabase.from('site_settings').update(payload).eq('id', rowId)
       if (error) {
         const upsert = await supabase
           .from('site_settings')
-          .upsert({ id: rowId === 1 || rowId === '1' ? 1 : rowId, ...payload })
+          .upsert({ id: normalizedId, ...payload })
         error = upsert.error
       }
       if (error) throw new Error(error.message)
-      setBaseline(form)
+
+      // Re-fetch authoritative row so logo_url / hero_image_url match Supabase
+      const { data: fresh, error: refetchError } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', normalizedId)
+        .maybeSingle()
+      if (refetchError) throw new Error(refetchError.message)
+
+      const synced = toForm(
+        mergeSettings((fresh as SiteSettings | null) ?? { ...officialSettingsDefaults, ...payload, id: normalizedId }),
+      )
+      setForm(synced)
+      setBaseline(synced)
       onToast({ type: 'success', message: dict.saved })
       onSaved?.()
     } catch (err) {
@@ -303,14 +318,20 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
     }
   }
 
-  if (loading) return <p className="text-sm text-[var(--text-muted)]">{dict.loading}</p>
+  if (loading) {
+    return (
+      <div className="flex min-h-40 items-center justify-center">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
+      </div>
+    )
+  }
 
   return (
-    <div className="relative pb-28">
+    <div className="relative pb-24 md:pb-28">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {dirty ? (
-            <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-300">
+            <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-300">
               {dict.unsaved}
             </span>
           ) : null}
@@ -319,7 +340,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
         <button
           type="button"
           onClick={() => setShowPreview((v) => !v)}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 text-xs font-semibold"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 text-xs font-semibold"
         >
           {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
           {showPreview ? dict.hidePreview : dict.showPreview}
@@ -344,7 +365,11 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
             <div className="mb-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-deep)]">
                 {form.hero_image_url ? (
-                  <img src={form.hero_image_url} alt={dict.heroPreview} className="aspect-[16/9] w-full object-cover" />
+                  <img
+                    src={withCacheBust(form.hero_image_url)}
+                    alt={dict.heroPreview}
+                    className="aspect-[16/9] w-full object-cover"
+                  />
                 ) : (
                   <div className="flex aspect-[16/9] items-center justify-center text-sm text-[var(--text-muted)]">
                     {dict.heroPreview}
@@ -368,7 +393,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                   type="button"
                   disabled={uploading}
                   onClick={() => inputRef.current?.click()}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-gradient px-4 text-sm font-bold text-white"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-brand-gradient px-4 text-sm font-bold text-white disabled:opacity-70"
                 >
                   <ImagePlus size={15} />
                   {uploading ? dict.uploading : dict.upload}
@@ -378,7 +403,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                   <button
                     type="button"
                     onClick={() => void handleRemoveHero()}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
                   >
                     <Trash2 size={14} />
                     {dict.remove}
@@ -479,14 +504,16 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
       </div>
 
       {dirty ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--glass-border)] bg-[var(--nav-bg)]/95 backdrop-blur-xl">
+        <div
+          className="fixed inset-x-0 z-[60] border-t border-[var(--glass-border)] bg-[var(--nav-bg)]/95 backdrop-blur-xl bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-0"
+        >
           <div className="container-site flex flex-wrap items-center justify-between gap-3 py-3">
             <span className="text-xs font-semibold text-amber-300">{dict.unsaved}</span>
             <button
               type="button"
               disabled={saving}
               onClick={() => void handleSave()}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-70"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-70 sm:flex-none"
             >
               {saving ? dict.saving : dict.saveAll}
             </button>
