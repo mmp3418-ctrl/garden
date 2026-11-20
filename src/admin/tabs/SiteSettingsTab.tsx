@@ -1,4 +1,4 @@
-import { ChevronDown, Eye, EyeOff, ImagePlus, RotateCcw, Trash2, UploadCloud } from 'lucide-react'
+import { Eye, EyeOff, ImagePlus, RotateCcw, Trash2, UploadCloud } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -50,28 +50,11 @@ function toForm(settings: SiteSettings): FormState {
   }
 }
 
-function Collapsible({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string
-  open: boolean
-  onToggle: () => void
-  children: ReactNode
-}) {
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="glass overflow-hidden rounded-2xl">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-start"
-      >
-        <span className="text-sm font-bold text-[var(--text-primary)]">{title}</span>
-        <ChevronDown size={18} className={`shrink-0 text-cyan transition ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open ? <div className="border-t border-[var(--glass-border)] px-5 pb-5 pt-4">{children}</div> : null}
+    <section className="glass space-y-5 rounded-2xl p-5 sm:p-6">
+      <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
+      {children}
     </section>
   )
 }
@@ -96,28 +79,40 @@ function BilingualField({
   rows?: number
 }) {
   return (
-    <div className="space-y-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-elevated)]/30 p-4">
+    <div className="space-y-3 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-elevated)]/25 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-cyan">{label}</p>
+        <p className="text-sm font-semibold text-cyan">{label}</p>
         <button
           type="button"
           onClick={onRestore}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--glass-border)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--text-muted)] hover:text-cyan"
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[var(--glass-border)] px-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-cyan"
         >
           <RotateCcw size={12} />
           {dict.restoreDefault}
         </button>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <AdminTextarea label="AR" value={valueAr} onChange={(e) => onChangeAr(e.target.value)} dir="rtl" rows={rows} />
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+          <AdminTextarea
+            label="العربية / AR"
+            value={valueAr}
+            onChange={(e) => onChangeAr(e.target.value)}
+            dir="rtl"
+            rows={rows}
+          />
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
             {valueAr.length} {dict.chars}
           </p>
         </div>
         <div>
-          <AdminTextarea label="EN" value={valueEn} onChange={(e) => onChangeEn(e.target.value)} dir="ltr" rows={rows} />
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+          <AdminTextarea
+            label="English / EN"
+            value={valueEn}
+            onChange={(e) => onChangeEn(e.target.value)}
+            dir="ltr"
+            rows={rows}
+          />
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
             {valueEn.length} {dict.chars}
           </p>
         </div>
@@ -136,9 +131,6 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
   const [dragging, setDragging] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
   const [previewLang, setPreviewLang] = useState<'ar' | 'en'>('ar')
-  const [openHero, setOpenHero] = useState(true)
-  const [openOverview, setOpenOverview] = useState(true)
-  const [openFacilities, setOpenFacilities] = useState(true)
   const [previewServices, setPreviewServices] = useState<ServiceRow[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -150,6 +142,10 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
       supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
       supabase.from('services').select('*').order('sort_order', { ascending: true }),
     ])
+
+    if (settingsRes.error) {
+      onToast({ type: 'error', message: settingsRes.error.message || dict.error })
+    }
 
     let row: SiteSettings | null = null
     if (!settingsRes.error && settingsRes.data) {
@@ -289,14 +285,11 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
       const normalizedId = rowId === 1 || rowId === '1' ? 1 : rowId
       let { error } = await supabase.from('site_settings').update(payload).eq('id', rowId)
       if (error) {
-        const upsert = await supabase
-          .from('site_settings')
-          .upsert({ id: normalizedId, ...payload })
+        const upsert = await supabase.from('site_settings').upsert({ id: normalizedId, ...payload })
         error = upsert.error
       }
       if (error) throw new Error(error.message)
 
-      // Re-fetch authoritative row so logo_url / hero_image_url match Supabase
       const { data: fresh, error: refetchError } = await supabase
         .from('site_settings')
         .select('*')
@@ -305,7 +298,13 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
       if (refetchError) throw new Error(refetchError.message)
 
       const synced = toForm(
-        mergeSettings((fresh as SiteSettings | null) ?? { ...officialSettingsDefaults, ...payload, id: normalizedId }),
+        mergeSettings(
+          (fresh as SiteSettings | null) ?? {
+            ...officialSettingsDefaults,
+            ...payload,
+            id: normalizedId,
+          },
+        ),
       )
       setForm(synced)
       setBaseline(synced)
@@ -327,28 +326,38 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
   }
 
   return (
-    <div className="relative pb-24 md:pb-28">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="relative space-y-5 pb-28">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {dirty ? (
             <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-300">
               {dict.unsaved}
             </span>
           ) : null}
-          <p className="text-xs text-[var(--text-muted)]">{dict.bilingualHint}</p>
+          <p className="text-sm text-[var(--text-muted)]">{dict.bilingualHint}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowPreview((v) => !v)}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 text-xs font-semibold"
-        >
-          {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
-          {showPreview ? dict.hidePreview : dict.showPreview}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPreview((v) => !v)}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 text-sm font-semibold"
+          >
+            {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showPreview ? dict.hidePreview : dict.showPreview}
+          </button>
+          <button
+            type="button"
+            disabled={saving || !dirty}
+            onClick={() => void handleSave()}
+            className="hidden min-h-[44px] items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-50 lg:inline-flex"
+          >
+            {saving ? dict.saving : dict.save}
+          </button>
+        </div>
       </div>
 
-      <div className={`grid gap-5 ${showPreview ? 'xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]' : ''}`}>
-        <div className="space-y-4">
+      <div className={`grid gap-5 ${showPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]' : ''}`}>
+        <div className="space-y-5">
           <LogoManager
             dict={dict}
             rowId={rowId}
@@ -361,9 +370,9 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
             onSaved={onSaved}
           />
 
-          <Collapsible title={dict.sectionHero} open={openHero} onToggle={() => setOpenHero((v) => !v)}>
-            <div className="mb-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-deep)]">
+          <SectionCard title={dict.sectionHero}>
+            <div className="mb-2 grid gap-4 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-deep)]">
                 {form.hero_image_url ? (
                   <img
                     src={withCacheBust(form.hero_image_url)}
@@ -383,12 +392,12 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                 }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={handleDrop}
-                className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-6 text-center ${
+                className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-8 text-center ${
                   dragging ? 'border-cyan bg-cyan/10' : 'border-[var(--glass-border)]'
                 }`}
               >
                 <UploadCloud className="text-cyan" size={24} />
-                <p className="text-xs text-[var(--text-secondary)]">{dict.dropHint}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{dict.dropHint}</p>
                 <button
                   type="button"
                   disabled={uploading}
@@ -403,7 +412,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                   <button
                     type="button"
                     onClick={() => void handleRemoveHero()}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-sm font-semibold text-red-400"
                   >
                     <Trash2 size={14} />
                     {dict.remove}
@@ -412,7 +421,7 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <BilingualField
                 dict={dict}
                 label="Hero Title"
@@ -433,14 +442,10 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                 rows={4}
               />
             </div>
-          </Collapsible>
+          </SectionCard>
 
-          <Collapsible
-            title={dict.sectionOverview}
-            open={openOverview}
-            onToggle={() => setOpenOverview((v) => !v)}
-          >
-            <div className="space-y-3">
+          <SectionCard title={dict.sectionOverview}>
+            <div className="space-y-4">
               <BilingualField
                 dict={dict}
                 label="Main Heading"
@@ -461,14 +466,10 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                 rows={5}
               />
             </div>
-          </Collapsible>
+          </SectionCard>
 
-          <Collapsible
-            title={dict.sectionFacilities}
-            open={openFacilities}
-            onToggle={() => setOpenFacilities((v) => !v)}
-          >
-            <div className="space-y-3">
+          <SectionCard title={dict.sectionFacilities}>
+            <div className="space-y-4">
               <BilingualField
                 dict={dict}
                 label="Facilities Heading"
@@ -489,37 +490,33 @@ const SiteSettingsTab: FC<Props> = ({ dict, onToast, onSaved }) => {
                 rows={4}
               />
             </div>
-          </Collapsible>
+          </SectionCard>
         </div>
 
         {showPreview ? (
-          <LivePreview
-            dict={dict}
-            content={form}
-            previewLang={previewLang}
-            onPreviewLangChange={setPreviewLang}
-            services={previewServices}
-          />
+          <div className="xl:sticky xl:top-6 xl:self-start">
+            <LivePreview
+              dict={dict}
+              content={form}
+              previewLang={previewLang}
+              onPreviewLangChange={setPreviewLang}
+              services={previewServices}
+            />
+          </div>
         ) : null}
       </div>
 
-      {dirty ? (
-        <div
-          className="fixed inset-x-0 z-[60] border-t border-[var(--glass-border)] bg-[var(--nav-bg)]/95 backdrop-blur-xl bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-0"
+      {/* Mobile sticky save */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--glass-border)] bg-[var(--nav-bg)]/95 px-4 py-3 backdrop-blur-xl lg:hidden" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <button
+          type="button"
+          disabled={saving || !dirty}
+          onClick={() => void handleSave()}
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brand-gradient text-base font-bold text-white disabled:opacity-50"
         >
-          <div className="container-site flex flex-wrap items-center justify-between gap-3 py-3">
-            <span className="text-xs font-semibold text-amber-300">{dict.unsaved}</span>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void handleSave()}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white disabled:opacity-70 sm:flex-none"
-            >
-              {saving ? dict.saving : dict.saveAll}
-            </button>
-          </div>
-        </div>
-      ) : null}
+          {saving ? dict.saving : dict.save}
+        </button>
+      </div>
     </div>
   )
 }

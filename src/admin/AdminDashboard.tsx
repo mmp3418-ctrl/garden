@@ -27,12 +27,12 @@ import SiteSettingsTab from './tabs/SiteSettingsTab'
 
 type TabId = 'site' | 'services' | 'gallery' | 'contact' | 'inbox'
 
-const tabs: Array<{ id: TabId; icon: typeof Settings2; shortAr: string; shortEn: string }> = [
-  { id: 'site', icon: Settings2, shortAr: 'الموقع', shortEn: 'Site' },
-  { id: 'services', icon: Sparkles, shortAr: 'المرافق', shortEn: 'Facilities' },
-  { id: 'gallery', icon: ImageIcon, shortAr: 'المعرض', shortEn: 'Gallery' },
-  { id: 'contact', icon: MapPin, shortAr: 'التواصل', shortEn: 'Contact' },
-  { id: 'inbox', icon: MessageSquare, shortAr: 'الوارد', shortEn: 'Inbox' },
+const tabs: Array<{ id: TabId; icon: typeof Settings2 }> = [
+  { id: 'site', icon: Settings2 },
+  { id: 'services', icon: Sparkles },
+  { id: 'gallery', icon: ImageIcon },
+  { id: 'contact', icon: MapPin },
+  { id: 'inbox', icon: MessageSquare },
 ]
 
 const AdminDashboard: FC = () => {
@@ -91,125 +91,151 @@ const AdminDashboard: FC = () => {
 
   const logoSrc = logoUrl ? withCacheBust(logoUrl, logoBust) : ''
 
+  const brandBlock = (
+    <div className="flex min-w-0 items-center gap-3">
+      {logoSrc ? (
+        <img
+          key={logoSrc}
+          src={logoSrc}
+          alt=""
+          className="h-9 w-auto max-w-[88px] object-contain"
+        />
+      ) : (
+        <div className="inline-flex rounded-xl bg-brand-gradient p-2.5 text-white">
+          <LayoutDashboard size={18} />
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="truncate font-display text-sm font-semibold text-cyan" dir="ltr">
+          {BRAND_NAME}
+        </p>
+        <p className="truncate text-xs text-[var(--text-muted)]">
+          {dict.dashboard} · {session.username}
+        </p>
+      </div>
+    </div>
+  )
+
+  const tabButtons = (variant: 'sidebar' | 'scroll') =>
+    tabs.map(({ id, icon: Icon }) => {
+      const active = activeTab === id
+      if (variant === 'sidebar') {
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3.5 text-start text-sm font-semibold transition ${
+              active
+                ? 'bg-brand-gradient text-white shadow-[0_8px_24px_rgba(0,169,255,0.22)]'
+                : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Icon size={17} />
+            <span className="truncate">{dict.tabs[id]}</span>
+          </button>
+        )
+      }
+      return (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setActiveTab(id)}
+          className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
+            active
+              ? 'bg-brand-gradient text-white'
+              : 'border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]'
+          }`}
+        >
+          <Icon size={15} />
+          {dict.tabs[id]}
+        </button>
+      )
+    })
+
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-page text-primary">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(0,169,255,0.08),transparent_45%),radial-gradient(ellipse_at_bottom_right,rgba(0,71,171,0.1),transparent_40%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(0,169,255,0.07),transparent_45%),radial-gradient(ellipse_at_bottom_right,rgba(0,71,171,0.09),transparent_40%)]" />
 
-      <header className="nav-shell sticky top-0 z-40">
-        <div className="container-site flex items-center justify-between gap-2 py-2.5 sm:gap-3 sm:py-3">
-          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            {logoSrc ? (
-              <img
-                key={logoSrc}
-                src={logoSrc}
-                alt=""
-                className="h-8 w-auto max-w-[72px] object-contain sm:h-9 sm:max-w-[96px]"
-              />
-            ) : (
-              <div className="inline-flex rounded-xl bg-brand-gradient p-2 text-white">
-                <LayoutDashboard size={16} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="truncate font-display text-sm font-semibold text-cyan" dir="ltr">
-                {BRAND_NAME}
-              </p>
-              <p className="truncate text-[11px] text-[var(--text-muted)] sm:text-xs">
-                {dict.dashboard} · {session.username}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+      {/* Mobile top bar */}
+      <header className="nav-shell sticky top-0 z-40 lg:hidden">
+        <div className="flex items-center justify-between gap-2 px-4 py-3">
+          {brandBlock}
+          <div className="flex shrink-0 items-center gap-1.5">
             <LanguageToggle />
             <ThemeToggle />
             <button
               type="button"
               onClick={signOut}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/10 px-2.5 text-xs font-semibold text-red-400 sm:px-3"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-400"
+              aria-label={dict.logout}
             >
-              <LogOut size={14} />
-              <span className="hidden sm:inline">{dict.logout}</span>
+              <LogOut size={16} />
             </button>
           </div>
         </div>
+        <div className="admin-tab-scroll flex gap-2 overflow-x-auto border-t border-[var(--nav-border)] px-4 py-2.5">
+          {tabButtons('scroll')}
+        </div>
       </header>
 
-      {/* Desktop / tablet horizontal pill tabs */}
-      <div className="container-site hidden pt-4 md:block">
-        <nav className="admin-tab-scroll flex gap-2 overflow-x-auto pb-1">
-          {tabs.map(({ id, icon: Icon }) => {
-            const active = activeTab === id
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
-                  active
-                    ? 'bg-brand-gradient text-white shadow-[0_8px_24px_rgba(0,169,255,0.25)]'
-                    : 'glass text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <Icon size={15} />
-                {dict.tabs[id]}
-              </button>
-            )
-          })}
-        </nav>
+      <div className="lg:flex lg:min-h-dvh">
+        {/* Desktop sidebar */}
+        <aside className="nav-shell sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-e border-[var(--nav-border)] lg:flex">
+          <div className="border-b border-[var(--nav-border)] px-5 py-5">{brandBlock}</div>
+          <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-4">
+            {tabButtons('sidebar')}
+          </nav>
+          <div className="space-y-3 border-t border-[var(--nav-border)] px-4 py-4">
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 text-sm font-semibold text-red-400"
+            >
+              <LogOut size={15} />
+              {dict.logout}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-6xl space-y-6">
+            <StatsCards
+              dict={dict}
+              facilities={facilities}
+              gallery={galleryCount}
+              unread={unread}
+              lastUpdated={lastUpdated}
+              language={language}
+            />
+
+            {activeTab === 'site' ? (
+              <SiteSettingsTab dict={dict} onToast={setToast} onSaved={() => void refreshStats()} />
+            ) : null}
+            {activeTab === 'services' ? (
+              <ServicesTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
+            ) : null}
+            {activeTab === 'gallery' ? (
+              <GalleryTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
+            ) : null}
+            {activeTab === 'contact' ? (
+              <ContactTab dict={dict} onToast={setToast} onSaved={() => void refreshStats()} />
+            ) : null}
+            {activeTab === 'inbox' ? (
+              <InboxSecurityTab
+                dict={dict}
+                onToast={setToast}
+                onChanged={() => void refreshStats()}
+              />
+            ) : null}
+          </div>
+        </main>
       </div>
-
-      <div className="container-site pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-4 md:pb-10 md:pt-5">
-        <StatsCards
-          dict={dict}
-          facilities={facilities}
-          gallery={galleryCount}
-          unread={unread}
-          lastUpdated={lastUpdated}
-          language={language}
-        />
-
-        {activeTab === 'site' ? (
-          <SiteSettingsTab dict={dict} onToast={setToast} onSaved={() => void refreshStats()} />
-        ) : null}
-        {activeTab === 'services' ? (
-          <ServicesTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
-        ) : null}
-        {activeTab === 'gallery' ? (
-          <GalleryTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
-        ) : null}
-        {activeTab === 'contact' ? (
-          <ContactTab dict={dict} onToast={setToast} onSaved={() => void refreshStats()} />
-        ) : null}
-        {activeTab === 'inbox' ? (
-          <InboxSecurityTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
-        ) : null}
-      </div>
-
-      {/* Mobile bottom-safe tab bar */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--nav-border)] bg-[var(--nav-bg)]/95 backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="grid grid-cols-5 gap-0.5 px-1 pt-1">
-          {tabs.map(({ id, icon: Icon, shortAr, shortEn }) => {
-            const active = activeTab === id
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={`flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-semibold transition ${
-                  active ? 'bg-cyan/15 text-cyan' : 'text-[var(--text-muted)]'
-                }`}
-              >
-                <Icon size={18} strokeWidth={active ? 2.4 : 2} />
-                <span className="truncate">{language === 'ar' ? shortAr : shortEn}</span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
 
       <AdminToast toast={toast} onClose={() => setToast(null)} />
     </div>

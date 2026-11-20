@@ -6,12 +6,13 @@ import type {
   TextareaHTMLAttributes,
 } from 'react'
 
+/** text-base (16px) prevents iOS zoom; min-h 44px for comfortable taps */
 const baseClass =
-  'w-full min-h-11 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--glass-border-hover)] focus:ring-2 focus:ring-[#00A9FF]/20'
+  'w-full min-h-[44px] rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3.5 py-2.5 text-base text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--glass-border-hover)] focus:ring-2 focus:ring-[#00A9FF]/20'
 
 const FieldShell: FC<{ label: string; children: ReactNode }> = ({ label, children }) => (
   <label className="block">
-    <span className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)]">{label}</span>
+    <span className="mb-1.5 block text-sm font-semibold text-[var(--text-muted)]">{label}</span>
     {children}
   </label>
 )
@@ -32,7 +33,7 @@ export const AdminTextarea: FC<TextareaHTMLAttributes<HTMLTextAreaElement> & { l
   ...props
 }) => (
   <FieldShell label={label}>
-    <textarea className={`${baseClass} min-h-28 resize-y ${className}`} {...props} />
+    <textarea className={`${baseClass} min-h-28 resize-y leading-7 ${className}`} {...props} />
   </FieldShell>
 )
 

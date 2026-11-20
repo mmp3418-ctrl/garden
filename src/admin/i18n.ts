@@ -87,10 +87,6 @@ export interface AdminDictionary {
   logoDarkPreview: string
   logoLightPreview: string
   logoUploading: string
-  logoUrlLabel: string
-  logoUrlPlaceholder: string
-  logoUrlHint: string
-  applyLogoUrl: string
 }
 
 const ar: AdminDictionary = {
@@ -175,15 +171,11 @@ const ar: AdminDictionary = {
   chars: 'حرف',
   dragHandle: 'سحب لإعادة الترتيب',
   websiteLogo: 'شعار الموقع',
-  logoHint: 'PNG, JPG, JPEG, WebP, SVG — اسحب وأفلت أو اختر ملفاً',
-  removeLogo: 'حذف الشعار',
+  logoHint: 'اختر صورة الشعار (PNG, JPG, WebP, SVG) لرفعها مباشرة',
+  removeLogo: 'حذف',
   logoDarkPreview: 'معاينة داكنة',
   logoLightPreview: 'معاينة فاتحة',
   logoUploading: 'جارٍ رفع الشعار...',
-  logoUrlLabel: 'رابط الشعار / المسار',
-  logoUrlPlaceholder: 'https://... أو /logo.png',
-  logoUrlHint: 'الصق رابط صورة مباشر أو مساراً نسبياً ثم اضغط تطبيق',
-  applyLogoUrl: 'تطبيق الرابط',
 }
 
 const en: AdminDictionary = {
@@ -268,15 +260,11 @@ const en: AdminDictionary = {
   chars: 'chars',
   dragHandle: 'Drag to reorder',
   websiteLogo: 'Website Logo',
-  logoHint: 'PNG, JPG, JPEG, WebP, SVG — drag & drop or choose a file',
-  removeLogo: 'Remove Logo',
+  logoHint: 'Choose a logo image (PNG, JPG, WebP, SVG) to upload',
+  removeLogo: 'Remove',
   logoDarkPreview: 'Dark preview',
   logoLightPreview: 'Light preview',
   logoUploading: 'Uploading logo...',
-  logoUrlLabel: 'Logo URL / Path',
-  logoUrlPlaceholder: 'https://... or /logo.png',
-  logoUrlHint: 'Paste a direct image URL or relative path, then apply',
-  applyLogoUrl: 'Apply URL',
 }
 
 export function getAdminDict(language: Language): AdminDictionary {

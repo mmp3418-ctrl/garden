@@ -31,16 +31,14 @@ const StatsCards: FC<StatsCardsProps> = ({
   ]
 
   return (
-    <div className="mb-5 grid grid-cols-2 gap-2.5 sm:mb-6 sm:gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {cards.map(({ label, value, icon: Icon }) => (
-        <article key={label} className="glass rounded-2xl p-3.5 sm:p-5">
-          <div className="mb-2 inline-flex rounded-xl bg-brand-gradient p-2 text-white sm:mb-3 sm:p-2.5">
-            <Icon size={15} />
+        <article key={label} className="glass rounded-2xl p-4 sm:p-5">
+          <div className="mb-3 inline-flex rounded-xl bg-brand-gradient p-2.5 text-white">
+            <Icon size={16} />
           </div>
-          <p className="text-[10px] font-semibold leading-4 text-[var(--text-muted)] sm:text-xs">
-            {label}
-          </p>
-          <p className="mt-1 truncate text-base font-extrabold text-[var(--text-primary)] sm:text-xl">
+          <p className="text-xs font-semibold text-[var(--text-muted)]">{label}</p>
+          <p className="mt-1 truncate text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
             {value}
           </p>
         </article>
