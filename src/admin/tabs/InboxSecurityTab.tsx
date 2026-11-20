@@ -18,6 +18,7 @@ const InboxSecurityTab: FC<Props> = ({ dict, onToast, onChanged }) => {
   const [messages, setMessages] = useState<ContactMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
+  const [search, setSearch] = useState('')
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -51,9 +52,18 @@ const InboxSecurityTab: FC<Props> = ({ dict, onToast, onChanged }) => {
   }, [])
 
   const visible = useMemo(() => {
-    if (filter === 'unread') return messages.filter((m) => !m.is_read)
-    return messages
-  }, [filter, messages])
+    const q = search.trim().toLowerCase()
+    return messages.filter((m) => {
+      if (filter === 'unread' && m.is_read) return false
+      if (!q) return true
+      return (
+        m.full_name.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        (m.phone ?? '').toLowerCase().includes(q) ||
+        m.message.toLowerCase().includes(q)
+      )
+    })
+  }, [filter, messages, search])
 
   const toggleRead = async (message: ContactMessage): Promise<void> => {
     const next = !(message.is_read ?? false)
@@ -122,7 +132,7 @@ const InboxSecurityTab: FC<Props> = ({ dict, onToast, onChanged }) => {
             <Mail size={18} className="text-cyan" />
             Inbox
           </h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setFilter('all')}
@@ -143,6 +153,14 @@ const InboxSecurityTab: FC<Props> = ({ dict, onToast, onChanged }) => {
             </button>
           </div>
         </div>
+
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={dict.searchMessages}
+          className="w-full min-h-11 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--glass-border-hover)] focus:ring-2 focus:ring-[#00A9FF]/20"
+        />
 
         {visible.length === 0 ? (
           <div className="glass rounded-2xl p-8 text-center text-sm text-[var(--text-muted)]">

@@ -27,6 +27,7 @@ export interface AdminDictionary {
     updated: string
   }
   save: string
+  saveAll: string
   saving: string
   saved: string
   error: string
@@ -60,6 +61,26 @@ export interface AdminDictionary {
   credentialsUpdated: string
   passwordMismatch: string
   mapPreview: string
+  livePreview: string
+  hidePreview: string
+  showPreview: string
+  unsaved: string
+  restoreDefault: string
+  restored: string
+  seedFacilities: string
+  seeded: string
+  inlineEdit: string
+  openEditor: string
+  searchMessages: string
+  selected: string
+  bulkDelete: string
+  previewLangAr: string
+  previewLangEn: string
+  sectionHero: string
+  sectionOverview: string
+  sectionFacilities: string
+  chars: string
+  dragHandle: string
 }
 
 const ar: AdminDictionary = {
@@ -88,7 +109,8 @@ const ar: AdminDictionary = {
     unread: 'رسائل غير مقروءة',
     updated: 'آخر تحديث',
   },
-  save: 'حفظ التغييرات',
+  save: 'حفظ',
+  saveAll: 'حفظ جميع التغييرات',
   saving: 'جارٍ الحفظ...',
   saved: 'تم الحفظ بنجاح',
   error: 'حدث خطأ، حاول مرة أخرى',
@@ -122,6 +144,26 @@ const ar: AdminDictionary = {
   credentialsUpdated: 'تم تحديث بيانات الدخول بنجاح',
   passwordMismatch: 'كلمتا المرور غير متطابقتين',
   mapPreview: 'معاينة الخريطة',
+  livePreview: 'معاينة حية',
+  hidePreview: 'إخفاء المعاينة',
+  showPreview: 'إظهار المعاينة',
+  unsaved: 'تغييرات غير محفوظة',
+  restoreDefault: 'استعادة النص الافتراضي المعتمد',
+  restored: 'تمت استعادة النص الافتراضي',
+  seedFacilities: 'تعبئة المرافق الأربعة المعتمدة',
+  seeded: 'تمت تعبئة المرافق الافتراضية',
+  inlineEdit: 'تعديل سريع',
+  openEditor: 'فتح المحرر',
+  searchMessages: 'بحث في الرسائل...',
+  selected: 'محدد',
+  bulkDelete: 'حذف المحدد',
+  previewLangAr: 'عربي',
+  previewLangEn: 'English',
+  sectionHero: 'الهيرو',
+  sectionOverview: 'نظرة عامة على المجمع',
+  sectionFacilities: 'المرافق الترفيهية',
+  chars: 'حرف',
+  dragHandle: 'سحب لإعادة الترتيب',
 }
 
 const en: AdminDictionary = {
@@ -150,7 +192,8 @@ const en: AdminDictionary = {
     unread: 'Unread Messages',
     updated: 'Last Updated',
   },
-  save: 'Save Changes',
+  save: 'Save',
+  saveAll: 'Save All Changes',
   saving: 'Saving...',
   saved: 'Saved successfully',
   error: 'Something went wrong. Try again.',
@@ -184,6 +227,26 @@ const en: AdminDictionary = {
   credentialsUpdated: 'Credentials updated successfully',
   passwordMismatch: 'Passwords do not match',
   mapPreview: 'Map preview',
+  livePreview: 'Live Preview',
+  hidePreview: 'Hide Preview',
+  showPreview: 'Show Preview',
+  unsaved: 'Unsaved Changes',
+  restoreDefault: 'Restore Official Default Text',
+  restored: 'Official default text restored',
+  seedFacilities: 'Seed Default 4 Facilities',
+  seeded: 'Default facilities seeded',
+  inlineEdit: 'Quick edit',
+  openEditor: 'Open editor',
+  searchMessages: 'Search messages...',
+  selected: 'selected',
+  bulkDelete: 'Delete selected',
+  previewLangAr: 'Arabic',
+  previewLangEn: 'English',
+  sectionHero: 'Hero',
+  sectionOverview: 'Complex Overview',
+  sectionFacilities: 'Recreational Facilities',
+  chars: 'chars',
+  dragHandle: 'Drag to reorder',
 }
 
 export function getAdminDict(language: Language): AdminDictionary {

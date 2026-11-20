@@ -1,4 +1,4 @@
-import { ImagePlus, Trash2, UploadCloud, X } from 'lucide-react'
+import { CheckSquare, ImagePlus, Square, Trash2, UploadCloud, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FC } from 'react'
 import { deleteMediaByPublicUrl, uploadMediaFile } from '../../lib/storage'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +18,7 @@ const GalleryTab: FC<Props> = ({ dict, onToast, onChanged }) => {
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const inputRef = useRef<HTMLInputElement>(null)
 
   const load = async (): Promise<void> => {
@@ -32,6 +33,7 @@ const GalleryTab: FC<Props> = ({ dict, onToast, onChanged }) => {
     } else {
       setItems((data as GalleryItem[]) ?? [])
     }
+    setSelected(new Set())
     setLoading(false)
   }
 
@@ -87,17 +89,54 @@ const GalleryTab: FC<Props> = ({ dict, onToast, onChanged }) => {
     if (event.dataTransfer.files?.length) void uploadFiles(event.dataTransfer.files)
   }
 
+  const toggleSelect = (id: string): void => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = (): void => {
+    if (selected.size === items.length) {
+      setSelected(new Set())
+      return
+    }
+    setSelected(new Set(items.map((item) => item.id)))
+  }
+
+  const deleteOne = async (item: GalleryItem): Promise<void> => {
+    const { error } = await supabase.from('gallery_items').delete().eq('id', item.id)
+    if (error) throw new Error(error.message)
+    if (item.image_url) {
+      try {
+        await deleteMediaByPublicUrl(item.image_url)
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
   const handleDelete = async (item: GalleryItem): Promise<void> => {
     if (!window.confirm(dict.confirmDelete)) return
     try {
-      const { error } = await supabase.from('gallery_items').delete().eq('id', item.id)
-      if (error) throw new Error(error.message)
-      if (item.image_url) {
-        try {
-          await deleteMediaByPublicUrl(item.image_url)
-        } catch {
-          /* best-effort */
-        }
+      await deleteOne(item)
+      onToast({ type: 'success', message: dict.saved })
+      onChanged?.()
+      await load()
+    } catch (err) {
+      onToast({ type: 'error', message: err instanceof Error ? err.message : dict.error })
+    }
+  }
+
+  const handleBulkDelete = async (): Promise<void> => {
+    if (selected.size === 0) return
+    if (!window.confirm(dict.confirmDelete)) return
+    try {
+      const targets = items.filter((item) => selected.has(item.id))
+      for (const item of targets) {
+        await deleteOne(item)
       }
       onToast({ type: 'success', message: dict.saved })
       onChanged?.()
@@ -144,9 +183,34 @@ const GalleryTab: FC<Props> = ({ dict, onToast, onChanged }) => {
         />
       </div>
 
-      <p className="text-sm text-[var(--text-secondary)]">
-        {items.length} {dict.tabs.gallery}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-[var(--text-secondary)]">
+          {items.length} {dict.tabs.gallery}
+          {selected.size > 0 ? ` · ${selected.size} ${dict.selected}` : ''}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {items.length > 0 ? (
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 text-xs font-semibold"
+            >
+              {selected.size === items.length ? <CheckSquare size={14} /> : <Square size={14} />}
+              {dict.filterAll}
+            </button>
+          ) : null}
+          {selected.size > 0 ? (
+            <button
+              type="button"
+              onClick={() => void handleBulkDelete()}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-400"
+            >
+              <Trash2 size={14} />
+              {dict.bulkDelete}
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       {items.length === 0 ? (
         <div className="glass rounded-2xl p-8 text-center text-sm text-[var(--text-muted)]">
@@ -154,33 +218,47 @@ const GalleryTab: FC<Props> = ({ dict, onToast, onChanged }) => {
         </div>
       ) : (
         <ul className="columns-1 gap-4 sm:columns-2 lg:columns-3">
-          {items.map((item) => (
-            <li key={item.id} className="mb-4 break-inside-avoid">
-              <div className="glass overflow-hidden rounded-2xl">
-                <button
-                  type="button"
-                  className="block w-full bg-[var(--bg-deep)]"
-                  onClick={() => item.image_url && setLightbox(item.image_url)}
-                >
-                  {item.image_url ? (
-                    <img src={item.image_url} alt="" className="w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex aspect-[4/3] items-center justify-center text-xs text-[var(--text-muted)]">—</div>
-                  )}
-                </button>
-                <div className="p-3">
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(item)}
-                    className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 text-sm font-semibold text-red-400"
-                  >
-                    <Trash2 size={15} />
-                    {dict.delete}
-                  </button>
+          {items.map((item) => {
+            const isSelected = selected.has(item.id)
+            return (
+              <li key={item.id} className="mb-4 break-inside-avoid">
+                <div className={`glass overflow-hidden rounded-2xl ${isSelected ? 'ring-2 ring-cyan' : ''}`}>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="absolute start-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-black/45 text-white"
+                      onClick={() => toggleSelect(item.id)}
+                    >
+                      {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="block w-full bg-[var(--bg-deep)]"
+                      onClick={() => item.image_url && setLightbox(item.image_url)}
+                    >
+                      {item.image_url ? (
+                        <img src={item.image_url} alt="" className="w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="flex aspect-[4/3] items-center justify-center text-xs text-[var(--text-muted)]">
+                          —
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(item)}
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 text-sm font-semibold text-red-400"
+                    >
+                      <Trash2 size={15} />
+                      {dict.delete}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       )}
 
