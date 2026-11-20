@@ -15,6 +15,7 @@ export interface AdminDictionary {
   dashboard: string
   tabs: {
     site: string
+    facilities: string
     services: string
     gallery: string
     contact: string
@@ -22,6 +23,7 @@ export interface AdminDictionary {
   }
   stats: {
     facilities: string
+    services: string
     gallery: string
     unread: string
     updated: string
@@ -46,6 +48,8 @@ export interface AdminDictionary {
   markUnread: string
   noMessages: string
   noGallery: string
+  noFacilities: string
+  noServices: string
   heroPreview: string
   heroImage: string
   bilingualHint: string
@@ -87,6 +91,7 @@ export interface AdminDictionary {
   logoDarkPreview: string
   logoLightPreview: string
   logoUploading: string
+  iconPicker: string
 }
 
 const ar: AdminDictionary = {
@@ -104,15 +109,17 @@ const ar: AdminDictionary = {
   dashboard: 'لوحة التحكم',
   tabs: {
     site: 'التعريف والخلفية',
-    services: 'المرافق والخدمات',
+    facilities: 'المرافق الترفيهية',
+    services: 'الخدمات',
     gallery: 'معرض الصور',
-    contact: 'وسائل التواصل والخريطة',
-    inbox: 'الرسائل وإعدادات الدخول',
+    contact: 'وسائل التواصل',
+    inbox: 'الوارد والأمان',
   },
   stats: {
-    facilities: 'إجمالي المرافق',
+    facilities: 'المرافق',
+    services: 'الخدمات',
     gallery: 'صور المعرض',
-    unread: 'رسائل غير مقروءة',
+    unread: 'غير مقروء',
     updated: 'آخر تحديث',
   },
   save: 'حفظ',
@@ -135,6 +142,8 @@ const ar: AdminDictionary = {
   markUnread: 'تعيين كغير مقروء',
   noMessages: 'لا توجد رسائل حالياً',
   noGallery: 'لا توجد صور في المعرض',
+  noFacilities: 'لا توجد مرافق بعد — أضف مرفقاً أو عبّئ الافتراضيات',
+  noServices: 'لا توجد خدمات بعد — أضف خدمة جديدة',
   heroPreview: 'معاينة خلفية الهيرو',
   heroImage: 'صورة خلفية الهيرو',
   bilingualHint: 'عربي / English',
@@ -154,9 +163,9 @@ const ar: AdminDictionary = {
   hidePreview: 'إخفاء المعاينة',
   showPreview: 'إظهار المعاينة',
   unsaved: 'تغييرات غير محفوظة',
-  restoreDefault: 'استعادة النص الافتراضي المعتمد',
+  restoreDefault: 'استعادة النص الافتراضي',
   restored: 'تمت استعادة النص الافتراضي',
-  seedFacilities: 'تعبئة المرافق الأربعة المعتمدة',
+  seedFacilities: 'تعبئة 4 مرافق افتراضية',
   seeded: 'تمت تعبئة المرافق الافتراضية',
   inlineEdit: 'تعديل سريع',
   openEditor: 'فتح المحرر',
@@ -176,6 +185,7 @@ const ar: AdminDictionary = {
   logoDarkPreview: 'معاينة داكنة',
   logoLightPreview: 'معاينة فاتحة',
   logoUploading: 'جارٍ رفع الشعار...',
+  iconPicker: 'اختيار الأيقونة',
 }
 
 const en: AdminDictionary = {
@@ -192,16 +202,18 @@ const en: AdminDictionary = {
   invalidCredentials: 'Invalid username or password',
   dashboard: 'Admin Dashboard',
   tabs: {
-    site: 'Site Identity & Hero',
-    services: 'Facilities & Services',
-    gallery: 'Gallery Photos',
-    contact: 'Contact & Map',
+    site: 'Site Identity',
+    facilities: 'Facilities',
+    services: 'Services',
+    gallery: 'Gallery',
+    contact: 'Contact',
     inbox: 'Inbox & Security',
   },
   stats: {
-    facilities: 'Total Facilities',
-    gallery: 'Gallery Photos',
-    unread: 'Unread Messages',
+    facilities: 'Facilities',
+    services: 'Services',
+    gallery: 'Gallery',
+    unread: 'Unread',
     updated: 'Last Updated',
   },
   save: 'Save',
@@ -210,7 +222,7 @@ const en: AdminDictionary = {
   saved: 'Saved successfully',
   error: 'Something went wrong. Try again.',
   loading: 'Loading...',
-  upload: 'Upload Image',
+  upload: 'Upload Images',
   uploading: 'Uploading...',
   remove: 'Remove',
   add: 'Add',
@@ -224,11 +236,13 @@ const en: AdminDictionary = {
   markUnread: 'Mark as unread',
   noMessages: 'No messages yet',
   noGallery: 'No gallery photos yet',
+  noFacilities: 'No facilities yet — add one or seed defaults',
+  noServices: 'No services yet — add a new service',
   heroPreview: 'Hero background preview',
   heroImage: 'Hero Background Image',
   bilingualHint: 'Arabic / English',
   dropHint: 'Drag & drop images here, or choose files to upload',
-  filterAll: 'All',
+  filterAll: 'Select all',
   filterUnread: 'Unread',
   securityTitle: 'Change Admin Credentials',
   securityHint: 'Update the dashboard username and password',
@@ -265,6 +279,7 @@ const en: AdminDictionary = {
   logoDarkPreview: 'Dark preview',
   logoLightPreview: 'Light preview',
   logoUploading: 'Uploading logo...',
+  iconPicker: 'Icon Picker',
 }
 
 export function getAdminDict(language: Language): AdminDictionary {

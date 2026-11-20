@@ -58,6 +58,7 @@ export const OFFICIAL_FACILITIES: Array<
       'A small swimming pool suitable for children, and another swimming pool with a size close to Olympic dimensions.',
     icon_name: 'Waves',
     image_url: null,
+    category: 'recreation',
     sort_order: 1,
   },
   {
@@ -69,6 +70,7 @@ export const OFFICIAL_FACILITIES: Array<
       'A spacious seating terrace surrounds the swimming pool area, featuring a shaded barbecue (BBQ) area surrounded by palm trees.',
     icon_name: 'Flame',
     image_url: null,
+    category: 'recreation',
     sort_order: 2,
   },
   {
@@ -80,6 +82,7 @@ export const OFFICIAL_FACILITIES: Array<
       'Located four steps above the pool area level, featuring a spacious terrace.',
     icon_name: 'Coffee',
     image_url: null,
+    category: 'recreation',
     sort_order: 3,
   },
   {
@@ -87,8 +90,9 @@ export const OFFICIAL_FACILITIES: Array<
     title_en: 'Changing Facilities and Restrooms',
     description_ar: 'يوجد حمامان لخدمة المنطقة الترفيهية.',
     description_en: 'There are two restrooms serving the recreational area.',
-    icon_name: 'Bath',
+    icon_name: 'Shirt',
     image_url: null,
+    category: 'recreation',
     sort_order: 4,
   },
 ]

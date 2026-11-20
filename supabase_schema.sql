@@ -50,9 +50,14 @@ CREATE TABLE IF NOT EXISTS public.services (
   description_en text,
   icon_name text,
   image_url text,
+  category text NOT NULL DEFAULT 'recreation',
   sort_order integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS category text;
+UPDATE public.services SET category = 'recreation' WHERE category IS NULL OR category = '';
+ALTER TABLE public.services ALTER COLUMN category SET DEFAULT 'recreation';
 
 CREATE TABLE IF NOT EXISTS public.gallery_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -61,8 +66,11 @@ CREATE TABLE IF NOT EXISTS public.gallery_items (
   category_ar text,
   category_en text,
   image_url text,
+  sort_order integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.gallery_items ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.contact_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

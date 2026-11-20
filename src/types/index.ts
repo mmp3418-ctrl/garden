@@ -5,6 +5,7 @@ export type {
   ContactMessage,
   ContactMessageInsert,
   GalleryItem,
+  ServiceCategory,
   ServiceRow,
   SiteSettings,
 } from './database'

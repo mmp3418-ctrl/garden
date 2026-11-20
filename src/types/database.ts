@@ -1,3 +1,5 @@
+export type ServiceCategory = 'recreation' | 'service'
+
 export interface SiteSettings {
   id: string | number
   hero_title_ar: string | null
@@ -37,6 +39,7 @@ export interface ServiceRow {
   description_en: string | null
   icon_name: string | null
   image_url: string | null
+  category: ServiceCategory | string | null
   sort_order: number
   created_at: string
 }
@@ -48,6 +51,7 @@ export interface GalleryItem {
   category_ar: string | null
   category_en: string | null
   image_url: string | null
+  sort_order: number | null
   created_at: string
 }
 

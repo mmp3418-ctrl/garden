@@ -3,9 +3,13 @@ import {
   Building2,
   Car,
   Coffee,
+  Dumbbell,
   Flame,
   Shield,
+  Shirt,
   Sparkles,
+  Trees,
+  Trophy,
   Waves,
   type LucideIcon,
 } from 'lucide-react'
@@ -16,6 +20,10 @@ const iconMap: Record<string, LucideIcon> = {
   flame: Flame,
   coffee: Coffee,
   bath: Bath,
+  shirt: Shirt,
+  dumbbell: Dumbbell,
+  trophy: Trophy,
+  trees: Trees,
   sparkles: Sparkles,
   car: Car,
   shield: Shield,
@@ -26,12 +34,18 @@ export const SERVICE_ICON_OPTIONS = [
   'Waves',
   'Flame',
   'Coffee',
+  'Shirt',
+  'Bath',
+  'Dumbbell',
+  'Trophy',
+  'Trees',
+  'Shield',
   'Sparkles',
   'Car',
-  'Shield',
   'Building2',
-  'Bath',
 ] as const
+
+export type ServiceIconName = (typeof SERVICE_ICON_OPTIONS)[number]
 
 interface ServiceIconProps {
   name?: string | null

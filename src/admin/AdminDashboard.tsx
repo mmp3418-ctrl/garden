@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   Image as ImageIcon,
   LayoutDashboard,
   LogOut,
@@ -14,26 +15,38 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { BRAND_NAME } from '../data/content'
 import { supabase } from '../lib/supabase'
+import type { ServiceRow } from '../types'
 import { withCacheBust } from '../utils/mediaUrl'
 import AdminLogin from './AdminLogin'
 import AdminToast, { type ToastState } from './components/AdminToast'
 import StatsCards from './components/StatsCards'
 import { getAdminDict } from './i18n'
 import ContactTab from './tabs/ContactTab'
+import FacilitiesTab from './tabs/FacilitiesTab'
 import GalleryTab from './tabs/GalleryTab'
 import InboxSecurityTab from './tabs/InboxSecurityTab'
 import ServicesTab from './tabs/ServicesTab'
 import SiteSettingsTab from './tabs/SiteSettingsTab'
 
-type TabId = 'site' | 'services' | 'gallery' | 'contact' | 'inbox'
+type TabId = 'site' | 'facilities' | 'services' | 'gallery' | 'contact' | 'inbox'
 
 const tabs: Array<{ id: TabId; icon: typeof Settings2 }> = [
   { id: 'site', icon: Settings2 },
-  { id: 'services', icon: Sparkles },
+  { id: 'facilities', icon: Sparkles },
+  { id: 'services', icon: Briefcase },
   { id: 'gallery', icon: ImageIcon },
   { id: 'contact', icon: MapPin },
   { id: 'inbox', icon: MessageSquare },
 ]
+
+function isRecreation(row: ServiceRow): boolean {
+  const value = (row.category ?? '').trim().toLowerCase()
+  return value === 'recreation' || value === '' || value === 'null'
+}
+
+function isService(row: ServiceRow): boolean {
+  return (row.category ?? '').trim().toLowerCase() === 'service'
+}
 
 const AdminDashboard: FC = () => {
   const { language } = useLanguage()
@@ -42,6 +55,7 @@ const AdminDashboard: FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('site')
   const [toast, setToast] = useState<ToastState>(null)
   const [facilities, setFacilities] = useState(0)
+  const [servicesCount, setServicesCount] = useState(0)
   const [galleryCount, setGalleryCount] = useState(0)
   const [unread, setUnread] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
@@ -56,7 +70,7 @@ const AdminDashboard: FC = () => {
 
   const refreshStats = useCallback(async () => {
     const [servicesRes, galleryRes, messagesRes, settingsRes] = await Promise.all([
-      supabase.from('services').select('id', { count: 'exact', head: true }),
+      supabase.from('services').select('id, category'),
       supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
       supabase
         .from('contact_messages')
@@ -65,7 +79,9 @@ const AdminDashboard: FC = () => {
       supabase.from('site_settings').select('updated_at, logo_url').eq('id', 1).maybeSingle(),
     ])
 
-    setFacilities(servicesRes.count ?? 0)
+    const rows = (servicesRes.data as ServiceRow[] | null) ?? []
+    setFacilities(rows.filter(isRecreation).length)
+    setServicesCount(rows.filter(isService).length)
     setGalleryCount(galleryRes.count ?? 0)
     setUnread(messagesRes.count ?? 0)
     const row = settingsRes.data as { updated_at?: string; logo_url?: string | null } | null
@@ -94,12 +110,7 @@ const AdminDashboard: FC = () => {
   const brandBlock = (
     <div className="flex min-w-0 items-center gap-3">
       {logoSrc ? (
-        <img
-          key={logoSrc}
-          src={logoSrc}
-          alt=""
-          className="h-9 w-auto max-w-[88px] object-contain"
-        />
+        <img key={logoSrc} src={logoSrc} alt="" className="h-9 w-auto max-w-[88px] object-contain" />
       ) : (
         <div className="inline-flex rounded-xl bg-brand-gradient p-2.5 text-white">
           <LayoutDashboard size={18} />
@@ -157,7 +168,6 @@ const AdminDashboard: FC = () => {
     <div className="relative min-h-dvh overflow-x-hidden bg-page text-primary">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(0,169,255,0.07),transparent_45%),radial-gradient(ellipse_at_bottom_right,rgba(0,71,171,0.09),transparent_40%)]" />
 
-      {/* Mobile top bar */}
       <header className="nav-shell sticky top-0 z-40 lg:hidden">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           {brandBlock}
@@ -180,7 +190,6 @@ const AdminDashboard: FC = () => {
       </header>
 
       <div className="lg:flex lg:min-h-dvh">
-        {/* Desktop sidebar */}
         <aside className="nav-shell sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-e border-[var(--nav-border)] lg:flex">
           <div className="border-b border-[var(--nav-border)] px-5 py-5">{brandBlock}</div>
           <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-4">
@@ -202,12 +211,12 @@ const AdminDashboard: FC = () => {
           </div>
         </aside>
 
-        {/* Main content */}
         <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-6xl space-y-6">
             <StatsCards
               dict={dict}
               facilities={facilities}
+              services={servicesCount}
               gallery={galleryCount}
               unread={unread}
               lastUpdated={lastUpdated}
@@ -216,6 +225,9 @@ const AdminDashboard: FC = () => {
 
             {activeTab === 'site' ? (
               <SiteSettingsTab dict={dict} onToast={setToast} onSaved={() => void refreshStats()} />
+            ) : null}
+            {activeTab === 'facilities' ? (
+              <FacilitiesTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />
             ) : null}
             {activeTab === 'services' ? (
               <ServicesTab dict={dict} onToast={setToast} onChanged={() => void refreshStats()} />

@@ -24,6 +24,7 @@ const seedServices: ServiceRow[] = OFFICIAL_FACILITIES.map((item, index) => ({
   description_en: item.description_en,
   icon_name: item.icon_name,
   image_url: null,
+  category: item.category ?? 'recreation',
   sort_order: item.sort_order,
   created_at: new Date().toISOString(),
 }))
