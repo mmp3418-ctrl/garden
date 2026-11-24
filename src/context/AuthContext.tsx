@@ -8,11 +8,14 @@ import {
   type FC,
   type ReactNode,
 } from 'react'
+import {
+  DEFAULT_ADMIN_PASSWORD,
+  DEFAULT_ADMIN_USERNAME,
+  matchesDefaultCredentials,
+} from '../lib/adminAuth'
 import { supabase } from '../lib/supabase'
 
 const SESSION_KEY = 'gc_admin_session'
-const FALLBACK_USERNAME = 'admin'
-const FALLBACK_PASSWORD = '20262026'
 
 interface AdminSession {
   username: string
@@ -48,14 +51,20 @@ function persistSession(session: AdminSession | null): void {
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
-async function verifyCredentials(
-  username: string,
-  password: string,
-): Promise<boolean> {
+/**
+ * Accepts:
+ * 1) Built-in / env defaults (`admin` / `20262026`)
+ * 2) Credentials stored in Supabase `admin_credentials` (id = 1)
+ */
+async function verifyCredentials(username: string, password: string): Promise<boolean> {
   const user = username.trim()
   const pass = password
 
-  // Primary: admin_credentials row id = 1
+  if (!user || !pass) return false
+
+  // Always allow configured defaults so login never bricks
+  if (matchesDefaultCredentials(user, pass)) return true
+
   try {
     const { data, error } = await supabase
       .from('admin_credentials')
@@ -66,16 +75,15 @@ async function verifyCredentials(
     if (!error && data) {
       const dbUser = String((data as { username?: string }).username ?? '').trim()
       const dbPass = String((data as { password?: string }).password ?? '')
-      if (dbUser && dbPass) {
-        return dbUser === user && dbPass === pass
+      if (dbUser && dbPass && dbUser === user && dbPass === pass) {
+        return true
       }
     }
   } catch {
-    /* fall through to built-in credentials */
+    /* ignore — defaults already checked above */
   }
 
-  // Reliable fallback so login always works
-  return user === FALLBACK_USERNAME && pass === FALLBACK_PASSWORD
+  return false
 }
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -93,7 +101,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       return { error: 'invalid' }
     }
     const next: AdminSession = {
-      username: username.trim(),
+      username: username.trim() || DEFAULT_ADMIN_USERNAME,
       loggedInAt: new Date().toISOString(),
     }
     persistSession(next)
@@ -119,3 +127,6 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
 }
+
+// Re-export defaults for admin UI that needs the known username seed
+export { DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD }

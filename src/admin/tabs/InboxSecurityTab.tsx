@@ -1,5 +1,6 @@
 import { CheckCheck, Lock, Mail, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FC, type FormEvent } from 'react'
+import { DEFAULT_ADMIN_USERNAME } from '../../lib/adminAuth'
 import { supabase } from '../../lib/supabase'
 import type { ContactMessage } from '../../types'
 import { AdminInput } from '../components/AdminField'
@@ -19,7 +20,7 @@ const InboxSecurityTab: FC<Props> = ({ dict, onToast, onChanged }) => {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
-  const [username, setUsername] = useState('admin')
+  const [username, setUsername] = useState(DEFAULT_ADMIN_USERNAME)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [savingCreds, setSavingCreds] = useState(false)
